@@ -1,65 +1,91 @@
-// Three.js setup
-let scene, camera, renderer, controls;
-let objects = [];
-let selectedObject = null;
-let clock = new THREE.Clock();
-let isPlaying = false;
-let currentTime = 0;
-let animations = [];
-let selectionBox = null;
+// core.js - FIXED VERSION
+console.log('🐱 SNM Core loading...');
 
-function init() {
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a1a1e);
+// Define SNM FIRST so all files can access it
+window.SNM = {
+    scene: null,
+    camera: null,
+    renderer: null,
+    controls: null,
+    objects: [],
+    selectedObject: null,
+    selectionBox: null,
+    animations: [],
+    currentTime: 0,
+    isPlaying: false,
+    clock: new THREE.Clock(),
     
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(5, 5, 5);
+    // Functions will be added below
+    init: null,
+    animate: null,
+    updateAnimations: null,
+    updateTimelineUI: null
+};
+
+// Now define the functions
+SNM.init = function() {
+    console.log('Initializing SNM...');
     
+    // Scene
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0x1a1a1e);
+    
+    // Camera
+    this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    this.camera.position.set(5, 5, 5);
+    
+    // Renderer
     const viewport = document.getElementById('viewport');
-    renderer = new THREE.WebGLRenderer({ canvas: viewport, antialias: true });
-    renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+    this.renderer = new THREE.WebGLRenderer({ canvas: viewport, antialias: true });
+    this.renderer.setSize(viewport.clientWidth, viewport.clientHeight);
     
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    // Controls
+    this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
     
+    // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-    scene.add(ambientLight);
+    this.scene.add(ambientLight);
     
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(10, 10, 5);
-    scene.add(directionalLight);
+    this.scene.add(directionalLight);
     
+    // Helpers
     const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
-    scene.add(gridHelper);
+    this.scene.add(gridHelper);
     
-    animate();
+    console.log('✅ SNM initialized!');
     
-    window.addEventListener('resize', onWindowResize);
-}
+    // Start animation loop
+    this.animate();
+    
+    // Handle resize
+    window.addEventListener('resize', () => {
+        const viewport = document.getElementById('viewport');
+        this.camera.aspect = viewport.clientWidth / viewport.clientHeight;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+    });
+};
 
-function animate() {
-    requestAnimationFrame(animate);
+SNM.animate = function() {
+    requestAnimationFrame(() => this.animate());
     
-    const delta = clock.getDelta();
+    const delta = this.clock.getDelta();
     
-    if (isPlaying) {
-        currentTime += delta;
-        updateAnimations(currentTime);
-        updateTimelineUI();
+    // Update animations if playing
+    if (this.isPlaying) {
+        this.currentTime += delta;
+        this.updateAnimations(this.currentTime);
+        this.updateTimelineUI();
     }
     
-    controls.update();
-    renderer.render(scene, camera);
-}
+    this.controls.update();
+    this.renderer.render(this.scene, this.camera);
+};
 
-function onWindowResize() {
-    const viewport = document.getElementById('viewport');
-    camera.aspect = viewport.clientWidth / viewport.clientHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(viewport.clientWidth, viewport.clientHeight);
-}
-
-function updateAnimations(time) {
-    animations.forEach(anim => {
+SNM.updateAnimations = function(time) {
+    this.animations.forEach(anim => {
         if (anim.object && anim.keyframes && anim.keyframes.length >= 2) {
             for (let i = 0; i < anim.keyframes.length - 1; i++) {
                 const kf1 = anim.keyframes[i];
@@ -81,20 +107,14 @@ function updateAnimations(time) {
             }
         }
     });
-}
+};
 
-function updateTimelineUI() {
+SNM.updateTimelineUI = function() {
     const slider = document.getElementById('time-slider');
     const display = document.getElementById('time-display');
     
-    if (slider) slider.value = (currentTime / 10) * 100;
-    if (display) display.textContent = currentTime.toFixed(1) + 's';
-}
-
-window.SNM = {
-    scene, camera, renderer, controls,
-    objects, selectedObject,
-    animations, currentTime, isPlaying,
-    selectionBox,
-    init, animate, updateAnimations, updateTimelineUI
+    if (slider) slider.value = (this.currentTime / 10) * 100;
+    if (display) display.textContent = this.currentTime.toFixed(1) + 's';
 };
+
+console.log('✅ SNM Core loaded!');
