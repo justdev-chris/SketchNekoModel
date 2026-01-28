@@ -1,4 +1,4 @@
-// ui.js - UI for Transform Controls
+// ui.js - COMPLETE WITH FIX
 console.log('SNM UI loading...');
 
 function updateUI() {
@@ -90,9 +90,28 @@ function setupEventListeners() {
             const tool = e.target.dataset.tool;
             
             switch(tool) {
-                case 'add-cube': Editor.addCube(); break;
-                case 'add-sphere': Editor.addSphere(); break;
-                case 'add-cylinder': Editor.addCylinder(); break;
+                case 'add-cube': 
+                    if (!SNM.scene) {
+                        console.log('Scene not ready, trying again...');
+                        setTimeout(() => Editor.addCube(), 100);
+                    } else {
+                        Editor.addCube(); 
+                    }
+                    break;
+                case 'add-sphere': 
+                    if (!SNM.scene) {
+                        setTimeout(() => Editor.addSphere(), 100);
+                    } else {
+                        Editor.addSphere(); 
+                    }
+                    break;
+                case 'add-cylinder': 
+                    if (!SNM.scene) {
+                        setTimeout(() => Editor.addCylinder(), 100);
+                    } else {
+                        Editor.addCylinder(); 
+                    }
+                    break;
                 case 'delete': Editor.deleteSelected(); break;
                 case 'export': Editor.exportGLB(); break;
             }
@@ -123,6 +142,7 @@ function setupEventListeners() {
     // Viewport click for selection
     document.getElementById('viewport').addEventListener('click', (e) => {
         if (e.target !== document.getElementById('viewport')) return;
+        if (!SNM.camera || !SNM.scene) return;
         
         const rect = e.target.getBoundingClientRect();
         const mouse = {
@@ -143,34 +163,52 @@ function setupEventListeners() {
     });
     
     // Setup keyboard controls
-    Editor.setupKeyboardControls();
+    if (typeof Editor.setupKeyboardControls === 'function') {
+        Editor.setupKeyboardControls();
+    }
     
     console.log('Event listeners setup complete');
 }
 
+// Initialize when page loads
 window.addEventListener('load', function() {
     console.log('SNM initializing...');
     
-    SNM.init();
+    // Initialize Three.js scene
+    if (typeof SNM !== 'undefined' && typeof SNM.init === 'function') {
+        SNM.init();
+    } else {
+        console.error('SNM not loaded!');
+        return;
+    }
+    
+    // Setup UI
     setupEventListeners();
     updateUI();
     
-    // Add default cube
-    setTimeout(() => {
-        Editor.addCube();
-        console.log('✅ SNM ready!');
-        
-        // Show controls
-        setTimeout(() => {
-            alert(`🎮 SNM Controls:
+    // Wait for scene to be ready before adding objects
+    function waitForScene() {
+        if (SNM && SNM.scene) {
+            Editor.addCube();
+            console.log('✅ SNM ready!');
+            
+            // Show controls
+            setTimeout(() => {
+                alert(`🎮 SNM Controls:
 • Click objects to select
 • Drag GIZMO arrows to move (red=X, green=Y, blue=Z)
 • Use Move/Rotate/Scale buttons to switch modes
 • Arrow keys for precise movement
 • Q/E to rotate, Z/X to scale
 • Space to play/pause animation`);
-        }, 500);
-    }, 100);
+            }, 500);
+        } else {
+            console.log('Waiting for scene...');
+            setTimeout(waitForScene, 50);
+        }
+    }
+    
+    waitForScene();
 });
 
 window.UI = { updateUI, updateObjectList, updateProperties };
