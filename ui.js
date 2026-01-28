@@ -470,7 +470,7 @@ function setupEventListeners() {
                 updateKeyframes();
             }
         });
-    });
+    }
     
     // Viewport selection
     const viewport = document.getElementById('viewport');
