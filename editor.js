@@ -1,7 +1,13 @@
-// editor.js - ALL FUNCTIONS COMPLETE
+// editor.js - FIXED VERSION
+console.log('🐱 SNM Editor loading...');
 
-// Primitive creation
+// Store selection box globally
+let currentSelectionBox = null;
+
+// Primitive creation functions
 function addCube() {
+    console.log('Adding cube...');
+    
     const geometry = new THREE.BoxGeometry(1, 1, 1);
     const material = new THREE.MeshStandardMaterial({ 
         color: new THREE.Color(Math.random(), Math.random(), Math.random()),
@@ -13,14 +19,20 @@ function addCube() {
     cube.name = `Cube_${SNM.objects.length + 1}`;
     cube.userData = { type: 'cube' };
     
+    // Add to scene
     SNM.scene.add(cube);
     SNM.objects.push(cube);
+    
+    // Select it
     selectObject(cube);
     updateUI();
+    
     return cube;
 }
 
 function addSphere() {
+    console.log('Adding sphere...');
+    
     const geometry = new THREE.SphereGeometry(0.5, 32, 32);
     const material = new THREE.MeshStandardMaterial({ 
         color: new THREE.Color(Math.random(), Math.random(), Math.random()),
@@ -36,10 +48,13 @@ function addSphere() {
     SNM.objects.push(sphere);
     selectObject(sphere);
     updateUI();
+    
     return sphere;
 }
 
 function addCylinder() {
+    console.log('Adding cylinder...');
+    
     const geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 32);
     const material = new THREE.MeshStandardMaterial({ 
         color: new THREE.Color(Math.random(), Math.random(), Math.random()),
@@ -55,15 +70,18 @@ function addCylinder() {
     SNM.objects.push(cylinder);
     selectObject(cylinder);
     updateUI();
+    
     return cylinder;
 }
 
 // Selection function (FIXED)
 function selectObject(object) {
+    console.log('Selecting:', object?.name || 'none');
+    
     // Remove old selection box
-    if (SNM.selectionBox) {
-        SNM.scene.remove(SNM.selectionBox);
-        SNM.selectionBox = null;
+    if (currentSelectionBox) {
+        SNM.scene.remove(currentSelectionBox);
+        currentSelectionBox = null;
     }
     
     // Update selected object
@@ -74,27 +92,29 @@ function selectObject(object) {
         const box = new THREE.BoxHelper(object, 0x00ff00);
         box.name = 'selection_box';
         SNM.scene.add(box);
-        SNM.selectionBox = box; // Store globally
-        
-        // Update UI
-        updateUI();
-    } else {
-        // If no object selected, clear UI
-        updateUI();
+        currentSelectionBox = box;
     }
+    
+    // Update UI
+    updateUI();
 }
 
 // Delete function
 function deleteSelected() {
-    if (!SNM.selectedObject) return;
+    if (!SNM.selectedObject) {
+        alert('No object selected!');
+        return;
+    }
+    
+    console.log('Deleting:', SNM.selectedObject.name);
     
     // Remove from scene
     SNM.scene.remove(SNM.selectedObject);
     
     // Remove selection box
-    if (SNM.selectionBox) {
-        SNM.scene.remove(SNM.selectionBox);
-        SNM.selectionBox = null;
+    if (currentSelectionBox) {
+        SNM.scene.remove(currentSelectionBox);
+        currentSelectionBox = null;
     }
     
     // Remove from objects array
@@ -119,6 +139,8 @@ function addKeyframe() {
         alert('Select an object first!');
         return;
     }
+    
+    console.log('Adding keyframe at time:', SNM.currentTime);
     
     const keyframe = {
         time: SNM.currentTime,
@@ -151,6 +173,8 @@ function exportGLB() {
         return;
     }
     
+    console.log('Exporting GLB...');
+    
     const exporter = new THREE.GLTFExporter();
     
     exporter.parse(SNM.scene, (gltf) => {
@@ -166,6 +190,7 @@ function exportGLB() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         
+        console.log('✅ Export complete!');
         alert('Model exported as snm_model.glb');
     }, { binary: true });
 }
@@ -176,6 +201,7 @@ function togglePlayback() {
     const playBtn = document.getElementById('play-btn');
     if (playBtn) {
         playBtn.textContent = SNM.isPlaying ? '⏸ Pause' : '▶ Play';
+        console.log('Playback:', SNM.isPlaying ? 'Playing' : 'Paused');
     }
 }
 
@@ -190,3 +216,5 @@ window.Editor = {
     exportGLB,
     togglePlayback
 };
+
+console.log('✅ SNM Editor loaded!');
