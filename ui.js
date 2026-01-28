@@ -1,5 +1,6 @@
-// ui.js - UI updates, event listeners, and interface management
+// ui.js - User interface, event handling, and UI updates
 
+// ========== UI UPDATES ==========
 function updateUI() {
     updateObjectList();
     updateProperties();
@@ -13,31 +14,52 @@ function updateObjectList() {
     
     list.innerHTML = '';
     
-    SNM.objects.forEach((obj, index) => {
+    SNM.objects.forEach(obj => {
         const item = document.createElement('div');
         item.className = 'object-item';
+        
         if (obj === SNM.selectedObject) {
             item.classList.add('selected');
         }
         
-        // Object icon based on type
+        // Icon based on object type
         const icon = document.createElement('div');
         icon.className = 'object-icon';
-        icon.style.background = obj.userData?.type === 'cat' ? '#ff66b2' : 
-                               obj.isGroup ? '#9966ff' : '#66aaff';
         
-        // Object name
+        let color = '#66aaff';
+        let symbol = '◻';
+        
+        switch(obj.userData?.type) {
+            case 'cube': color = '#66aaff'; symbol = '◻'; break;
+            case 'sphere': color = '#ff6666'; symbol = '●'; break;
+            case 'cylinder': color = '#66ff66'; symbol = '⬭'; break;
+            case 'cone': color = '#ffff66'; symbol = '△'; break;
+            case 'torus': color = '#ff66ff'; symbol = '⭕'; break;
+            case 'neko': color = '#ff9966'; symbol = '🐱'; break;
+            default: color = '#aaaaaa'; symbol = '?';
+        }
+        
+        icon.style.background = color;
+        icon.textContent = symbol;
+        icon.style.fontSize = '12px';
+        icon.style.textAlign = 'center';
+        icon.style.lineHeight = '16px';
+        
+        // Name
         const nameSpan = document.createElement('span');
         nameSpan.textContent = obj.name;
+        nameSpan.style.marginLeft = '8px';
+        nameSpan.style.flex = '1';
         
         // Visibility toggle
         const eyeBtn = document.createElement('button');
         eyeBtn.className = 'eye-btn';
         eyeBtn.textContent = obj.visible ? '👁️' : '👁️‍🗨️';
-        eyeBtn.style.background = 'none';
+        eyeBtn.style.background = 'transparent';
         eyeBtn.style.border = 'none';
         eyeBtn.style.cursor = 'pointer';
         eyeBtn.style.fontSize = '16px';
+        eyeBtn.style.padding = '0 5px';
         eyeBtn.onclick = (e) => {
             e.stopPropagation();
             obj.visible = !obj.visible;
@@ -48,25 +70,44 @@ function updateObjectList() {
         item.appendChild(nameSpan);
         item.appendChild(eyeBtn);
         
-        item.onclick = () => Editor.selectObject(obj);
+        item.onclick = () => SNM.selectObject(obj);
         list.appendChild(item);
     });
 }
 
 function updateProperties() {
-    const props = document.getElementById('properties');
-    const materialProps = document.getElementById('material-props');
-    if (!props || !materialProps) return;
+    const props = document.getElementById('property-fields');
+    if (!props) return;
     
     props.innerHTML = '';
-    materialProps.innerHTML = '';
     
     if (!SNM.selectedObject) {
-        props.innerHTML = '<p style="color: #aaa; text-align: center;">Select an object</p>';
+        props.innerHTML = '<p style="color: #aaa; text-align: center; padding: 20px;">Select an object to edit properties</p>';
         return;
     }
     
     const obj = SNM.selectedObject;
+    
+    // Object Name
+    const nameGroup = document.createElement('div');
+    nameGroup.className = 'property-group';
+    nameGroup.innerHTML = '<h4>Object</h4>';
+    
+    const nameRow = document.createElement('div');
+    nameRow.className = 'property-row';
+    nameRow.innerHTML = '<label>Name:</label>';
+    
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.value = obj.name;
+    nameInput.onchange = (e) => {
+        obj.name = e.target.value;
+        updateUI();
+    };
+    nameRow.appendChild(nameInput);
+    nameGroup.appendChild(nameRow);
+    
+    props.appendChild(nameGroup);
     
     // Transform Properties
     const transformGroup = document.createElement('div');
@@ -79,7 +120,7 @@ function updateProperties() {
         row.className = 'property-row';
         
         const label = document.createElement('label');
-        label.textContent = `Pos ${axis}:`;
+        label.textContent = `Position ${axis}:`;
         
         const input = document.createElement('input');
         input.type = 'number';
@@ -87,8 +128,8 @@ function updateProperties() {
         input.value = obj.position.getComponent(idx).toFixed(2);
         input.onchange = (e) => {
             obj.position.setComponent(idx, parseFloat(e.target.value) || 0);
-            if (obj.userData.selectionHelper) {
-                obj.userData.selectionHelper.update();
+            if (obj.userData.helper) {
+                obj.userData.helper.update();
             }
             SNM.updateCoordinates(obj.position);
         };
@@ -98,22 +139,22 @@ function updateProperties() {
         transformGroup.appendChild(row);
     });
     
-    // Rotation
+    // Rotation (in degrees)
     ['X', 'Y', 'Z'].forEach((axis, idx) => {
         const row = document.createElement('div');
         row.className = 'property-row';
         
         const label = document.createElement('label');
-        label.textContent = `Rot ${axis}:`;
+        label.textContent = `Rotation ${axis}:`;
         
         const input = document.createElement('input');
         input.type = 'number';
-        input.step = '0.1';
+        input.step = '1';
         input.value = (obj.rotation.getComponent(idx) * (180 / Math.PI)).toFixed(1);
         input.onchange = (e) => {
             obj.rotation.setComponent(idx, (parseFloat(e.target.value) || 0) * (Math.PI / 180));
-            if (obj.userData.selectionHelper) {
-                obj.userData.selectionHelper.update();
+            if (obj.userData.helper) {
+                obj.userData.helper.update();
             }
         };
         
@@ -138,8 +179,8 @@ function updateProperties() {
         input.onchange = (e) => {
             const val = parseFloat(e.target.value) || 1;
             obj.scale.setComponent(idx, val);
-            if (obj.userData.selectionHelper) {
-                obj.userData.selectionHelper.update();
+            if (obj.userData.helper) {
+                obj.userData.helper.update();
             }
         };
         
@@ -150,8 +191,8 @@ function updateProperties() {
     
     props.appendChild(transformGroup);
     
-    // Material Properties (if it's a mesh)
-    if (obj.isMesh) {
+    // Material Properties (only for meshes)
+    if (obj.isMesh || (obj.isGroup && obj.children.some(child => child.isMesh))) {
         const materialGroup = document.createElement('div');
         materialGroup.className = 'property-group';
         materialGroup.innerHTML = '<h4>Material</h4>';
@@ -163,109 +204,98 @@ function updateProperties() {
         
         const colorInput = document.createElement('input');
         colorInput.type = 'color';
-        colorInput.value = '#' + obj.material.color.getHexString();
-        colorInput.style.width = '60px';
-        colorInput.onchange = (e) => {
-            obj.material.color.set(e.target.value);
-        };
+        colorInput.id = 'color-picker';
+        
+        // Get color from first mesh in group or the mesh itself
+        let targetMesh = obj;
+        if (obj.isGroup) {
+            const mesh = obj.children.find(child => child.isMesh);
+            if (mesh) targetMesh = mesh;
+        }
+        
+        if (targetMesh.isMesh) {
+            colorInput.value = '#' + targetMesh.material.color.getHexString();
+            colorInput.onchange = (e) => {
+                targetMesh.material.color.set(e.target.value);
+            };
+        }
+        
         colorRow.appendChild(colorInput);
         materialGroup.appendChild(colorRow);
         
-        // Metalness
+        // Metalness slider
         const metalRow = document.createElement('div');
         metalRow.className = 'property-row';
         metalRow.innerHTML = '<label>Metalness:</label>';
         
         const metalInput = document.createElement('input');
         metalInput.type = 'range';
+        metalInput.id = 'metal-slider';
         metalInput.min = '0';
         metalInput.max = '1';
         metalInput.step = '0.1';
-        metalInput.value = obj.material.metalness;
+        metalInput.value = targetMesh.isMesh ? targetMesh.material.metalness : 0;
         metalInput.onchange = (e) => {
-            obj.material.metalness = parseFloat(e.target.value);
+            if (targetMesh.isMesh) {
+                targetMesh.material.metalness = parseFloat(e.target.value);
+            }
         };
+        
         metalRow.appendChild(metalInput);
         materialGroup.appendChild(metalRow);
         
-        // Roughness
+        // Roughness slider
         const roughRow = document.createElement('div');
         roughRow.className = 'property-row';
         roughRow.innerHTML = '<label>Roughness:</label>';
         
         const roughInput = document.createElement('input');
         roughInput.type = 'range';
+        roughInput.id = 'rough-slider';
         roughInput.min = '0';
         roughInput.max = '1';
         roughInput.step = '0.1';
-        roughInput.value = obj.material.roughness;
+        roughInput.value = targetMesh.isMesh ? targetMesh.material.roughness : 0.5;
         roughInput.onchange = (e) => {
-            obj.material.roughness = parseFloat(e.target.value);
+            if (targetMesh.isMesh) {
+                targetMesh.material.roughness = parseFloat(e.target.value);
+            }
         };
+        
         roughRow.appendChild(roughInput);
         materialGroup.appendChild(roughRow);
         
-        materialProps.appendChild(materialGroup);
-        
-        // Material Presets
-        const presetGroup = document.createElement('div');
-        presetGroup.className = 'property-group';
-        presetGroup.innerHTML = '<h4>Presets</h4>';
-        
-        const presets = ['plastic', 'metal', 'rubber', 'glass', 'gold', 'silver'];
-        presets.forEach(preset => {
-            const btn = document.createElement('button');
-            btn.className = 'tool-btn';
-            btn.textContent = preset.charAt(0).toUpperCase() + preset.slice(1);
-            btn.style.margin = '2px';
-            btn.style.padding = '5px';
-            btn.onclick = () => {
-                const presetData = Editor.materialPresets[preset];
-                obj.material.color.set(presetData.color);
-                obj.material.metalness = presetData.metalness;
-                obj.material.roughness = presetData.roughness;
-                if (presetData.transparent) {
-                    obj.material.transparent = true;
-                    obj.material.opacity = presetData.opacity;
-                }
-                updateProperties();
-            };
-            presetGroup.appendChild(btn);
-        });
-        
-        materialProps.appendChild(presetGroup);
+        props.appendChild(materialGroup);
     }
 }
 
 function updateTimeline() {
-    const container = document.getElementById('keyframes-container');
-    if (!container) return;
+    const track = document.getElementById('keyframe-track');
+    if (!track) return;
     
-    container.innerHTML = '';
-    
-    // Set container width based on max time
-    container.style.width = `${SNM.maxTime * 100}px`;
+    track.innerHTML = '';
     
     // Draw time markers
-    for (let i = 0; i <= SNM.maxTime; i++) {
+    for (let i = 0; i <= SNM.maxTime; i += 0.5) {
         const marker = document.createElement('div');
         marker.style.position = 'absolute';
-        marker.style.left = `${i * 100}px`;
+        marker.style.left = `${(i / SNM.maxTime) * 100}%`;
         marker.style.width = '1px';
-        marker.style.height = i % 1 === 0 ? '20px' : '10px';
+        marker.style.height = i % 1 === 0 ? '30px' : '20px';
         marker.style.background = i % 1 === 0 ? '#666' : '#444';
-        marker.style.top = '40px';
-        container.appendChild(marker);
+        marker.style.top = '50%';
+        marker.style.transform = 'translateY(-50%)';
+        track.appendChild(marker);
         
         if (i % 1 === 0) {
             const label = document.createElement('div');
             label.textContent = `${i}s`;
             label.style.position = 'absolute';
-            label.style.left = `${i * 100 + 2}px`;
-            label.style.top = '20px';
+            label.style.left = `${(i / SNM.maxTime) * 100 + 0.5}%`;
+            label.style.top = '10px';
             label.style.color = '#888';
-            label.style.fontSize = '10px';
-            container.appendChild(label);
+            label.style.fontSize = '11px';
+            track.appendChild(label);
         }
     }
     
@@ -274,37 +304,38 @@ function updateTimeline() {
         anim.keyframes.forEach(kf => {
             const keyframe = document.createElement('div');
             keyframe.className = 'keyframe';
-            keyframe.style.left = `${kf.time * 100}px`;
-            keyframe.title = `${anim.object?.name || 'Object'} - ${kf.time.toFixed(1)}s`;
+            keyframe.style.left = `${(kf.time / SNM.maxTime) * 100}%`;
+            keyframe.title = `${anim.object?.name || 'Object'} - ${kf.time.toFixed(2)}s`;
             
             keyframe.onclick = (e) => {
                 e.stopPropagation();
-                // Select this keyframe
-                document.querySelectorAll('.keyframe').forEach(k => k.classList.remove('selected'));
-                keyframe.classList.add('selected');
+                // Select and jump to this keyframe
+                SNM.currentTime = kf.time;
+                SNM.updateTimelineUI();
                 
-                // Jump to this time
-                SNM.setCurrentTime(kf.time);
                 if (anim.object) {
-                    Editor.selectObject(anim.object);
+                    SNM.selectObject(anim.object);
                     anim.object.position.copy(kf.position);
                     anim.object.rotation.copy(kf.rotation);
                     anim.object.scale.copy(kf.scale);
+                    
+                    if (anim.object.userData.helper) {
+                        anim.object.userData.helper.update();
+                    }
                 }
             };
             
             keyframe.oncontextmenu = (e) => {
                 e.preventDefault();
-                if (confirm('Delete this keyframe?')) {
+                if (confirm(`Delete keyframe at ${kf.time.toFixed(2)}s?`)) {
                     Editor.deleteKeyframe(kf.time);
                 }
             };
             
-            container.appendChild(keyframe);
+            track.appendChild(keyframe);
         });
     });
     
-    // Update playhead
     SNM.updateTimelineUI();
 }
 
@@ -316,49 +347,35 @@ function updateStats() {
     }
 }
 
+// ========== EVENT HANDLERS ==========
 function setupEventListeners() {
-    console.log('Setting up event listeners...');
+    console.log('Setting up UI event listeners...');
     
-    // Toolbar buttons
+    // Toolbar buttons - Creation
     document.querySelectorAll('[data-tool]').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const tool = e.target.dataset.tool;
-            console.log('Tool clicked:', tool);
             
             switch(tool) {
-                // Creation
+                // Primitive creation
                 case 'add-cube': Editor.addCube(); break;
                 case 'add-sphere': Editor.addSphere(); break;
                 case 'add-cylinder': Editor.addCylinder(); break;
                 case 'add-cone': Editor.addCone(); break;
                 case 'add-torus': Editor.addTorus(); break;
-                case 'add-plane': Editor.addPlane(); break;
-                case 'cat-model': Editor.addCatModel(); break;
                 
-                // Editing
+                // Mesh editing
                 case 'extrude': Editor.extrudeMesh(); break;
                 case 'bevel': Editor.bevelMesh(); break;
                 case 'subdivide': Editor.subdivideMesh(); break;
-                case 'merge': Editor.mergeMeshes(); break;
-                
-                // Animation
-                case 'add-keyframe': Editor.addKeyframe(); break;
-                case 'loop': Editor.setLooping(true); break;
-                
-                // File
-                case 'new-scene': 
-                    if (confirm('Start new scene? Unsaved changes will be lost.')) {
-                        location.reload();
-                    }
-                    break;
-                case 'import': Editor.importModel(); break;
-                case 'export': exportGLB(); break;
                 
                 // Object manipulation
-                case 'undo': SNM.undo(); break;
-                case 'redo': SNM.redo(); break;
                 case 'duplicate': Editor.duplicateSelected(); break;
                 case 'delete': Editor.deleteSelected(); break;
+                case 'add-keyframe': Editor.addKeyframe(); break;
+                
+                // Animation
+                case 'loop': Editor.setLooping(true); break;
             }
         });
     });
@@ -368,9 +385,10 @@ function setupEventListeners() {
         item.addEventListener('click', (e) => {
             e.preventDefault();
             const format = e.target.dataset.export;
+            
             switch(format) {
-                case 'gltf': Editor.exportGLTF(); break;
                 case 'glb': Editor.exportGLB(); break;
+                case 'gltf': Editor.exportGLTF(); break;
                 case 'obj': Editor.exportOBJ(); break;
                 case 'stl': Editor.exportSTL(); break;
                 case 'json': Editor.exportJSON(); break;
@@ -386,29 +404,17 @@ function setupEventListeners() {
         });
     });
     
-    // Neko tools
-    document.querySelectorAll('.neko-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const tool = e.target.dataset.tool;
-            switch(tool) {
-                case 'paw-cursor': Editor.togglePawCursor(); break;
-                case 'whisker-guide': Editor.toggleWhiskerGuide(); break;
-                case 'cat-model': Editor.addCatModel(); break;
-            }
-        });
-    });
-    
     // Timeline controls
     const timeSlider = document.getElementById('time-slider');
     if (timeSlider) {
         timeSlider.addEventListener('input', (e) => {
             const time = (parseFloat(e.target.value) / 100) * SNM.maxTime;
-            SNM.setCurrentTime(time);
-        });
-        
-        timeSlider.addEventListener('change', (e) => {
-            const time = (parseFloat(e.target.value) / 100) * SNM.maxTime;
-            SNM.setCurrentTime(time);
+            SNM.currentTime = time;
+            SNM.updateTimelineUI();
+            
+            if (!SNM.isPlaying) {
+                SNM.updateAnimations(time);
+            }
         });
     }
     
@@ -422,13 +428,28 @@ function setupEventListeners() {
     });
     
     // Time navigation
-    document.getElementById('goto-start')?.addEventListener('click', () => SNM.setCurrentTime(0));
-    document.getElementById('goto-end')?.addEventListener('click', () => SNM.setCurrentTime(SNM.maxTime));
-    document.getElementById('prev-frame')?.addEventListener('click', () => {
-        SNM.setCurrentTime(SNM.currentTime - (1 / SNM.fps));
+    document.getElementById('goto-start')?.addEventListener('click', () => {
+        SNM.currentTime = 0;
+        SNM.updateTimelineUI();
+        SNM.updateAnimations(0);
     });
+    
+    document.getElementById('goto-end')?.addEventListener('click', () => {
+        SNM.currentTime = SNM.maxTime;
+        SNM.updateTimelineUI();
+        SNM.updateAnimations(SNM.maxTime);
+    });
+    
+    document.getElementById('prev-frame')?.addEventListener('click', () => {
+        SNM.currentTime = Math.max(0, SNM.currentTime - (1 / SNM.fps));
+        SNM.updateTimelineUI();
+        SNM.updateAnimations(SNM.currentTime);
+    });
+    
     document.getElementById('next-frame')?.addEventListener('click', () => {
-        SNM.setCurrentTime(SNM.currentTime + (1 / SNM.fps));
+        SNM.currentTime = Math.min(SNM.maxTime, SNM.currentTime + (1 / SNM.fps));
+        SNM.updateTimelineUI();
+        SNM.updateAnimations(SNM.currentTime);
     });
     
     // FPS input
@@ -442,12 +463,9 @@ function setupEventListeners() {
     // Viewport click for object selection
     const viewport = document.getElementById('viewport');
     if (viewport) {
-        // Basic raycasting for object selection
         viewport.addEventListener('click', (e) => {
-            // Don't select if clicking on UI elements
             if (e.target !== viewport) return;
             
-            // Raycast to find clicked object
             const rect = viewport.getBoundingClientRect();
             const mouse = new THREE.Vector2();
             
@@ -457,31 +475,27 @@ function setupEventListeners() {
             const raycaster = new THREE.Raycaster();
             raycaster.setFromCamera(mouse, SNM.camera);
             
-            // Filter to only selectable objects (not helpers, lights, etc.)
-            const selectableObjects = SNM.objects.filter(obj => 
-                obj.isMesh || obj.isGroup
-            );
-            
-            const intersects = raycaster.intersectObjects(selectableObjects, true);
+            const intersects = raycaster.intersectObjects(SNM.objects, true);
             
             if (intersects.length > 0) {
-                // Find the top-most object (not a child of another selected object)
                 let clickedObject = intersects[0].object;
                 
-                // Traverse up to find the main object
+                // Find the top-level object
                 while (clickedObject.parent && clickedObject.parent !== SNM.scene) {
                     clickedObject = clickedObject.parent;
                 }
                 
-                Editor.selectObject(clickedObject);
+                SNM.selectObject(clickedObject);
             } else {
                 // Clicked empty space - deselect
-                Editor.selectObject(null);
+                SNM.selectObject(null);
             }
         });
         
         // Mouse move for coordinates
         viewport.addEventListener('mousemove', (e) => {
+            if (!SNM.camera) return;
+            
             const rect = viewport.getBoundingClientRect();
             const mouse = new THREE.Vector2();
             
@@ -491,69 +505,109 @@ function setupEventListeners() {
             const raycaster = new THREE.Raycaster();
             raycaster.setFromCamera(mouse, SNM.camera);
             
-            // Create a plane at y=0 for ground intersection
+            // Create ground plane at y=0
             const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
             const intersectionPoint = new THREE.Vector3();
-            raycaster.ray.intersectPlane(plane, intersectionPoint);
             
-            SNM.updateCoordinates(intersectionPoint);
+            if (raycaster.ray.intersectPlane(plane, intersectionPoint)) {
+                SNM.updateCoordinates(intersectionPoint);
+            }
         });
     }
     
-    // Timeline track click for time scrubbing
+    // Timeline track click for scrubbing
     const timelineTrack = document.getElementById('timeline-track');
     if (timelineTrack) {
         timelineTrack.addEventListener('click', (e) => {
             const rect = timelineTrack.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const time = (x / rect.width) * SNM.maxTime;
-            SNM.setCurrentTime(time);
+            
+            SNM.currentTime = Math.max(0, Math.min(time, SNM.maxTime));
+            SNM.updateTimelineUI();
+            SNM.updateAnimations(SNM.currentTime);
         });
     }
     
-    // Keyboard shortcuts help
-    window.addEventListener('keydown', (e) => {
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
         if (e.key === '?' || (e.key === '/' && e.shiftKey)) {
             e.preventDefault();
-            alert(`Keyboard Shortcuts:
+            alert(`🎮 SNM Keyboard Shortcuts:
+
+🔄 Transform:
 G - Move tool
 R - Rotate tool
 S - Scale tool
 Q - Toggle world/local space
+
+🎯 Selection:
+Click - Select object
 Delete - Delete selected
-Ctrl+D - Duplicate
+Ctrl+D - Duplicate selected
+
+⏪ Undo/Redo:
 Ctrl+Z - Undo
-Ctrl+Shift+Z - Redo
-Space - Play/Pause animation
-Click + Drag - Orbit camera
-Right click + Drag - Pan camera
-Scroll - Zoom`);
+Ctrl+Y - Redo
+
+🎬 Animation:
+Space - Play/Pause
+← → - Frame navigation
+
+🖱️ Camera:
+Left Drag - Orbit
+Right Drag - Pan
+Scroll - Zoom
+`);
         }
     });
     
-    console.log('✅ Event listeners set up!');
+    // Neko tools (if added later)
+    document.querySelectorAll('.neko-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const tool = e.target.dataset.tool;
+            switch(tool) {
+                case 'paw-cursor': Editor.togglePawCursor(); break;
+                case 'whisker-guide': Editor.toggleWhiskerGuide(); break;
+                case 'cat-model': Editor.addNekoCat(); break;
+            }
+        });
+    });
+    
+    console.log('✅ UI event listeners set up');
 }
 
-// Initialize everything
-window.onload = () => {
-    console.log('🐱 SNM Editor Loading...');
-    
-    // Initialize core
-    SNM.init();
-    
-    // Setup UI
+// ========== INITIALIZATION ==========
+function initUI() {
+    // Setup all event listeners
     setupEventListeners();
+    
+    // Initial UI update
     updateUI();
     
-    // Add a default cube to start with
+    // Add default cube to start with
     setTimeout(() => {
         Editor.addCube();
-        console.log('✅ SNM Editor Loaded!');
-    }, 500);
-};
+        console.log('🐱 SNM Editor Ready!');
+    }, 100);
+}
+
+// Start everything when page loads
+window.addEventListener('load', () => {
+    // Initialize core Three.js
+    SNM.init();
+    
+    // Initialize UI
+    initUI();
+});
 
 // Expose UI functions
-window.UI = { 
-    updateUI, updateObjectList, updateProperties, 
-    updateTimeline, updateStats, setupEventListeners 
+window.UI = {
+    updateUI,
+    updateObjectList,
+    updateProperties,
+    updateTimeline,
+    updateStats,
+    setupEventListeners,
+    initUI
 };
