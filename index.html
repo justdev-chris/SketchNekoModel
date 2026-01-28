@@ -1,60 +1,117 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sketch Neko Model</title>
-    <meta charset="utf-8">
     <link rel="stylesheet" href="style.css">
-    <!-- THREE.JS -->
+    
+    <!-- Three.js Core -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- Three.js Extensions -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <!-- TRANSFORM CONTROLS (GIZMO) -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
 </head>
 <body>
     <div id="app">
+        <!-- Top Toolbar -->
         <div id="toolbar">
-            <button class="tool-btn" data-tool="add-cube">Cube</button>
-            <button class="tool-btn" data-tool="add-sphere">Sphere</button>
-            <button class="tool-btn" data-tool="add-cylinder">Cylinder</button>
-            <button class="tool-btn" data-tool="delete">Delete</button>
-            <button class="tool-btn" data-tool="export">Export</button>
+            <div class="tool-section">
+                <h4>Create</h4>
+                <div class="tool-buttons">
+                    <button class="tool-btn" data-tool="add-cube">Cube</button>
+                    <button class="tool-btn" data-tool="add-sphere">Sphere</button>
+                    <button class="tool-btn" data-tool="add-cylinder">Cylinder</button>
+                </div>
+            </div>
             
-            <div class="transform-mode">
-                <button class="mode-btn active" data-mode="translate">Move</button>
-                <button class="mode-btn" data-mode="rotate">Rotate</button>
-                <button class="mode-btn" data-mode="scale">Scale</button>
+            <div class="tool-section">
+                <h4>Edit</h4>
+                <div class="tool-buttons">
+                    <button class="tool-btn" data-tool="delete">Delete</button>
+                    <button class="tool-btn" data-tool="export">Export</button>
+                </div>
+            </div>
+            
+            <div class="tool-section">
+                <h4>Transform</h4>
+                <div class="transform-buttons">
+                    <button class="mode-btn active" data-mode="translate">Move</button>
+                    <button class="mode-btn" data-mode="rotate">Rotate</button>
+                    <button class="mode-btn" data-mode="scale">Scale</button>
+                </div>
+            </div>
+            
+            <div class="tool-section">
+                <h4>Animation</h4>
+                <div class="tool-buttons">
+                    <button id="play-btn">▶ Play</button>
+                    <button id="add-keyframe">+ Keyframe</button>
+                </div>
             </div>
         </div>
 
+        <!-- Main Content -->
         <div id="main">
+            <!-- Left Panel - Hierarchy -->
             <div id="hierarchy-panel" class="panel">
-                <h3>Objects</h3>
-                <div id="object-list"></div>
+                <div class="panel-header">
+                    <h3>Scene</h3>
+                    <span id="object-count">0 objects</span>
+                </div>
+                <div id="object-list" class="scrollable">
+                    <!-- Objects will be added here -->
+                </div>
             </div>
 
+            <!-- Center - 3D Viewport -->
             <div id="viewport-container">
                 <canvas id="viewport"></canvas>
-                <div id="gizmo-info">Move: Red=X Green=Y Blue=Z</div>
+                <div id="gizmo-info">
+                    <span id="gizmo-mode">Move: Red=X Green=Y Blue=Z</span>
+                    <span id="coordinates">X: 0.00 Y: 0.00 Z: 0.00</span>
+                </div>
             </div>
 
+            <!-- Right Panel - Properties -->
             <div id="properties-panel" class="panel">
-                <h3>Properties</h3>
-                <div id="properties"></div>
+                <div class="panel-header">
+                    <h3>Properties</h3>
+                    <span id="selected-name">None</span>
+                </div>
+                <div id="properties" class="scrollable">
+                    <!-- Properties will be added here -->
+                </div>
             </div>
         </div>
 
+        <!-- Bottom - Timeline -->
         <div id="timeline" class="panel">
-            <h3>Timeline</h3>
-            <div id="timeline-controls">
-                <button id="play-btn">▶ Play</button>
-                <button id="add-keyframe">+ Keyframe</button>
-                <input type="range" id="time-slider" min="0" max="100" value="0">
-                <span id="time-display">0.0s</span>
+            <div class="panel-header">
+                <h3>Timeline</h3>
+                <div id="time-controls">
+                    <span id="time-display">0.00s</span>
+                    <input type="range" id="time-slider" min="0" max="100" value="0">
+                    <button id="clear-keyframes">Clear</button>
+                </div>
             </div>
+            <div id="timeline-track">
+                <div id="keyframes-container"></div>
+                <div id="playhead"></div>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div id="statusbar">
+            <span id="status">Ready</span>
+            <span id="stats">Vertices: 0 | Faces: 0</span>
+            <span id="fps">FPS: 60</span>
         </div>
     </div>
 
+    <!-- Our Scripts -->
     <script src="core.js"></script>
     <script src="editor.js"></script>
     <script src="ui.js"></script>
