@@ -1,4 +1,4 @@
-// ui.js - COMPLETE UI MANAGEMENT
+// ui.js - COMPLETE UI WITH WORKING COLOR PICKER
 console.log('SNM UI loading...');
 
 // ===== UI UPDATE FUNCTIONS =====
@@ -18,7 +18,7 @@ function updateObjectList() {
     list.innerHTML = '';
     
     if (SNM.objects.length === 0) {
-        list.innerHTML = '<div class="empty-state">No objects</div>';
+        list.innerHTML = '<div style="padding: 20px; color: #aaa; text-align: center;">No objects</div>';
         return;
     }
     
@@ -39,7 +39,14 @@ function updateObjectList() {
         // Icon based on type
         const icon = document.createElement('span');
         icon.className = 'object-icon';
-        icon.textContent = getObjectIcon(obj.userData?.type);
+        
+        switch(obj.userData?.type) {
+            case 'cube': icon.textContent = '▢'; break;
+            case 'sphere': icon.textContent = '●'; break;
+            case 'cylinder': icon.textContent = '⬤'; break;
+            case 'plane': icon.textContent = '▭'; break;
+            default: icon.textContent = '?';
+        }
         
         // Name
         const nameSpan = document.createElement('span');
@@ -49,7 +56,7 @@ function updateObjectList() {
         // Visibility toggle
         const eyeBtn = document.createElement('button');
         eyeBtn.className = 'eye-btn';
-        eyeBtn.textContent = obj.visible ? '👁️' : '👁️‍🗨️';
+        eyeBtn.textContent = obj.visible ? '👁' : '🚫';
         eyeBtn.title = obj.visible ? 'Hide' : 'Show';
         eyeBtn.onclick = (e) => {
             e.stopPropagation();
@@ -72,16 +79,6 @@ function updateObjectList() {
     });
 }
 
-function getObjectIcon(type) {
-    switch(type) {
-        case 'cube': return '⬜';
-        case 'sphere': return '⚪';
-        case 'cylinder': return '🛢️';
-        case 'plane': return '📄';
-        default: return '❓';
-    }
-}
-
 function updateProperties() {
     const props = document.getElementById('properties');
     if (!props) return;
@@ -89,78 +86,74 @@ function updateProperties() {
     props.innerHTML = '';
     
     if (!SNM.selectedObject) {
-        props.innerHTML = `
-            <div class="empty-state">
-                <div style="font-size: 48px;">👈</div>
-                <div style="margin-top: 10px; color: #aaa;">Select an object</div>
-            </div>
-        `;
+        props.innerHTML = '<div style="padding: 40px; text-align: center; color: #666;"><div style="font-size: 48px;">👈</div><div style="margin-top: 10px;">Select an object</div></div>';
         return;
     }
     
     const obj = SNM.selectedObject;
     
-    // Object Info
-    const infoGroup = document.createElement('div');
-    infoGroup.className = 'property-group';
-    infoGroup.innerHTML = `
-        <h4>Object Info</h4>
-        <div class="property-row">
-            <label>Name:</label>
-            <input type="text" id="object-name-input" value="${obj.name}">
-        </div>
-        <div class="property-row">
-            <label>Type:</label>
-            <span style="color: #aaa;">${obj.userData?.type || 'Unknown'}</span>
-        </div>
-    `;
-    props.appendChild(infoGroup);
-    
-    // Name input handler
-    const nameInput = infoGroup.querySelector('#object-name-input');
-    nameInput.onchange = (e) => {
-        obj.name = e.target.value || `Object_${Date.now()}`;
-        updateUI();
-    };
-    
-    // Transform Controls
-    const transformGroup = document.createElement('div');
-    transformGroup.className = 'property-group';
-    transformGroup.innerHTML = `
-        <h4>Transform</h4>
+    // Transform Mode Buttons
+    const modeDiv = document.createElement('div');
+    modeDiv.style.marginBottom = '20px';
+    modeDiv.innerHTML = `
         <div style="display: flex; gap: 5px; margin-bottom: 15px;">
             <button class="mode-btn ${SNM.transformControls?.mode === 'translate' ? 'active' : ''}" 
-                    onclick="Editor.setTransformMode('translate')">Move</button>
+                    onclick="Editor.setTransformMode('translate')"
+                    style="flex: 1; padding: 10px; background: ${SNM.transformControls?.mode === 'translate' ? '#0066cc' : '#444'}; color: white; border: none; border-radius: 4px;">
+                Move
+            </button>
             <button class="mode-btn ${SNM.transformControls?.mode === 'rotate' ? 'active' : ''}" 
-                    onclick="Editor.setTransformMode('rotate')">Rotate</button>
+                    onclick="Editor.setTransformMode('rotate')"
+                    style="flex: 1; padding: 10px; background: ${SNM.transformControls?.mode === 'rotate' ? '#0066cc' : '#444'}; color: white; border: none; border-radius: 4px;">
+                Rotate
+            </button>
             <button class="mode-btn ${SNM.transformControls?.mode === 'scale' ? 'active' : ''}" 
-                    onclick="Editor.setTransformMode('scale')">Scale</button>
+                    onclick="Editor.setTransformMode('scale')"
+                    style="flex: 1; padding: 10px; background: ${SNM.transformControls?.mode === 'scale' ? '#0066cc' : '#444'}; color: white; border: none; border-radius: 4px;">
+                Scale
+            </button>
         </div>
     `;
-    props.appendChild(transformGroup);
+    props.appendChild(modeDiv);
+    
+    // Object Name
+    const nameGroup = document.createElement('div');
+    nameGroup.style.background = '#2a2a2a';
+    nameGroup.style.padding = '15px';
+    nameGroup.style.borderRadius = '6px';
+    nameGroup.style.marginBottom = '15px';
+    nameGroup.innerHTML = `
+        <div style="color: #aaa; font-size: 12px; margin-bottom: 5px;">Name</div>
+        <input type="text" 
+               value="${obj.name}"
+               style="width: 100%; padding: 8px; background: #333; border: 1px solid #444; color: white; border-radius: 4px;"
+               onchange="SNM.selectedObject.name = this.value; updateUI()">
+    `;
+    props.appendChild(nameGroup);
     
     // Position
     const posGroup = document.createElement('div');
-    posGroup.className = 'property-group';
-    posGroup.innerHTML = '<h4>Position</h4>';
+    posGroup.style.background = '#2a2a2a';
+    posGroup.style.padding = '15px';
+    posGroup.style.borderRadius = '6px';
+    posGroup.style.marginBottom = '15px';
+    posGroup.innerHTML = '<div style="color: #aaa; font-size: 12px; margin-bottom: 10px;">Position</div>';
     
     ['X', 'Y', 'Z'].forEach((axis, idx) => {
         const row = document.createElement('div');
-        row.className = 'property-row';
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.marginBottom = '8px';
         row.innerHTML = `
-            <label>${axis}:</label>
-            <input type="number" step="0.01" class="pos-input" data-axis="${idx}" 
-                   value="${obj.position.getComponent(idx).toFixed(2)}">
+            <div style="width: 20px; color: #aaa;">${axis}</div>
+            <input type="number" 
+                   step="0.1"
+                   value="${obj.position.getComponent(idx).toFixed(2)}"
+                   style="flex: 1; margin-left: 10px; padding: 8px; background: #333; border: 1px solid #444; color: white; border-radius: 4px;">
         `;
         
         const input = row.querySelector('input');
         input.onchange = (e) => {
-            const value = parseFloat(e.target.value) || 0;
-            obj.position.setComponent(idx, value);
-            if (SNM.selectionBox) SNM.selectionBox.update();
-        };
-        
-        input.oninput = (e) => {
             const value = parseFloat(e.target.value) || 0;
             obj.position.setComponent(idx, value);
             if (SNM.selectionBox) SNM.selectionBox.update();
@@ -172,18 +165,25 @@ function updateProperties() {
     
     // Rotation
     const rotGroup = document.createElement('div');
-    rotGroup.className = 'property-group';
-    rotGroup.innerHTML = '<h4>Rotation (degrees)</h4>';
+    rotGroup.style.background = '#2a2a2a';
+    rotGroup.style.padding = '15px';
+    rotGroup.style.borderRadius = '6px';
+    rotGroup.style.marginBottom = '15px';
+    rotGroup.innerHTML = '<div style="color: #aaa; font-size: 12px; margin-bottom: 10px;">Rotation (degrees)</div>';
     
     ['X', 'Y', 'Z'].forEach((axis, idx) => {
         const row = document.createElement('div');
-        row.className = 'property-row';
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.marginBottom = '8px';
         
         const degrees = obj.rotation.getComponent(idx) * (180 / Math.PI);
         row.innerHTML = `
-            <label>${axis}:</label>
-            <input type="number" step="1" class="rot-input" data-axis="${idx}" 
-                   value="${degrees.toFixed(1)}">
+            <div style="width: 20px; color: #aaa;">${axis}</div>
+            <input type="number" 
+                   step="1"
+                   value="${degrees.toFixed(1)}"
+                   style="flex: 1; margin-left: 10px; padding: 8px; background: #333; border: 1px solid #444; color: white; border-radius: 4px;">
         `;
         
         const input = row.querySelector('input');
@@ -200,16 +200,24 @@ function updateProperties() {
     
     // Scale
     const scaleGroup = document.createElement('div');
-    scaleGroup.className = 'property-group';
-    scaleGroup.innerHTML = '<h4>Scale</h4>';
+    scaleGroup.style.background = '#2a2a2a';
+    scaleGroup.style.padding = '15px';
+    scaleGroup.style.borderRadius = '6px';
+    scaleGroup.style.marginBottom = '15px';
+    scaleGroup.innerHTML = '<div style="color: #aaa; font-size: 12px; margin-bottom: 10px;">Scale</div>';
     
     ['X', 'Y', 'Z'].forEach((axis, idx) => {
         const row = document.createElement('div');
-        row.className = 'property-row';
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.marginBottom = '8px';
         row.innerHTML = `
-            <label>${axis}:</label>
-            <input type="number" step="0.1" min="0.1" class="scale-input" data-axis="${idx}" 
-                   value="${obj.scale.getComponent(idx).toFixed(2)}">
+            <div style="width: 20px; color: #aaa;">${axis}</div>
+            <input type="number" 
+                   step="0.1"
+                   min="0.1"
+                   value="${obj.scale.getComponent(idx).toFixed(2)}"
+                   style="flex: 1; margin-left: 10px; padding: 8px; background: #333; border: 1px solid #444; color: white; border-radius: 4px;">
         `;
         
         const input = row.querySelector('input');
@@ -223,60 +231,67 @@ function updateProperties() {
     });
     props.appendChild(scaleGroup);
     
-    // Material
-    const matGroup = document.createElement('div');
-    matGroup.className = 'property-group';
-    matGroup.innerHTML = `
-        <h4>Material</h4>
-        <div class="property-row">
-            <label>Color:</label>
-            <input type="color" id="color-input" value="#${obj.material.color.getHexString()}">
+    // COLOR PICKER - THIS IS WHAT YOU NEED
+    const colorGroup = document.createElement('div');
+    colorGroup.style.background = '#2a2a2a';
+    colorGroup.style.padding = '15px';
+    colorGroup.style.borderRadius = '6px';
+    colorGroup.style.marginBottom = '15px';
+    colorGroup.innerHTML = `
+        <div style="color: #aaa; font-size: 12px; margin-bottom: 10px;">Material</div>
+        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+            <div style="width: 60px; color: #aaa;">Color:</div>
+            <input type="color" 
+                   id="color-picker"
+                   value="#${obj.material.color.getHexString()}"
+                   style="flex: 1; height: 40px; border: none; cursor: pointer; background: transparent;">
         </div>
-        <div class="property-row">
-            <label>Metalness:</label>
-            <input type="range" min="0" max="1" step="0.1" id="metalness-input" 
-                   value="${obj.material.metalness}">
-            <span style="width: 30px; text-align: center;">${obj.material.metalness.toFixed(1)}</span>
+        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+            <div style="width: 60px; color: #aaa;">Metal:</div>
+            <input type="range" 
+                   min="0" max="1" step="0.1"
+                   value="${obj.material.metalness}"
+                   style="flex: 1;"
+                   onchange="SNM.selectedObject.material.metalness = parseFloat(this.value);">
+            <div style="width: 30px; text-align: center; color: #aaa; margin-left: 10px;">${obj.material.metalness.toFixed(1)}</div>
         </div>
-        <div class="property-row">
-            <label>Roughness:</label>
-            <input type="range" min="0" max="1" step="0.1" id="roughness-input" 
-                   value="${obj.material.roughness}">
-            <span style="width: 30px; text-align: center;">${obj.material.roughness.toFixed(1)}</span>
+        <div style="display: flex; align-items: center;">
+            <div style="width: 60px; color: #aaa;">Rough:</div>
+            <input type="range" 
+                   min="0" max="1" step="0.1"
+                   value="${obj.material.roughness}"
+                   style="flex: 1;"
+                   onchange="SNM.selectedObject.material.roughness = parseFloat(this.value);">
+            <div style="width: 30px; text-align: center; color: #aaa; margin-left: 10px;">${obj.material.roughness.toFixed(1)}</div>
         </div>
     `;
-    props.appendChild(matGroup);
+    props.appendChild(colorGroup);
     
-    // Material handlers
-    const colorInput = matGroup.querySelector('#color-input');
-    colorInput.onchange = (e) => {
-        obj.material.color.set(e.target.value);
-    };
+    // Color picker event - THIS CHANGES THE COLOR
+    const colorPicker = document.getElementById('color-picker');
+    if (colorPicker) {
+        colorPicker.onchange = (e) => {
+            console.log('Changing color to:', e.target.value);
+            obj.material.color.set(e.target.value);
+            obj.material.needsUpdate = true;
+        };
+    }
     
-    const metalInput = matGroup.querySelector('#metalness-input');
-    metalInput.onchange = (e) => {
-        obj.material.metalness = parseFloat(e.target.value);
-        matGroup.querySelector('span:nth-child(2)').textContent = obj.material.metalness.toFixed(1);
-    };
-    
-    const roughInput = matGroup.querySelector('#roughness-input');
-    roughInput.onchange = (e) => {
-        obj.material.roughness = parseFloat(e.target.value);
-        matGroup.querySelector('span:nth-child(3)').textContent = obj.material.roughness.toFixed(1);
-    };
-    
-    // Animation controls
+    // Animation info if exists
     const anim = SNM.animations.find(a => a.object === SNM.selectedObject);
     if (anim && anim.keyframes.length > 0) {
         const animGroup = document.createElement('div');
-        animGroup.className = 'property-group';
+        animGroup.style.background = '#2a2a2a';
+        animGroup.style.padding = '15px';
+        animGroup.style.borderRadius = '6px';
         animGroup.innerHTML = `
-            <h4>Animation</h4>
-            <div style="color: #aaa; margin-bottom: 10px;">
+            <div style="color: #aaa; font-size: 12px; margin-bottom: 5px;">Animation</div>
+            <div style="color: #888; font-size: 11px; margin-bottom: 10px;">
                 ${anim.keyframes.length} keyframes<br>
-                Duration: ${anim.keyframes[anim.keyframes.length-1].time.toFixed(1)}s
+                Last: ${anim.keyframes[anim.keyframes.length-1].time.toFixed(1)}s
             </div>
-            <button onclick="Editor.clearKeyframes()" style="width: 100%; padding: 10px; margin-top: 5px;">
+            <button onclick="Editor.clearKeyframes()" 
+                    style="width: 100%; padding: 10px; background: #ff3333; color: white; border: none; border-radius: 4px; cursor: pointer;">
                 Clear Keyframes
             </button>
         `;
@@ -325,12 +340,22 @@ function updateKeyframes() {
     anim.keyframes.forEach(kf => {
         const keyframeEl = document.createElement('div');
         keyframeEl.className = 'keyframe';
+        keyframeEl.style.position = 'absolute';
+        keyframeEl.style.width = '12px';
+        keyframeEl.style.height = '30px';
+        keyframeEl.style.background = 'linear-gradient(to bottom, #ff9900, #ff6600)';
+        keyframeEl.style.borderRadius = '3px';
+        keyframeEl.style.top = '50%';
+        keyframeEl.style.transform = 'translateY(-50%)';
+        keyframeEl.style.cursor = 'pointer';
+        keyframeEl.style.border = '2px solid #ffcc00';
         keyframeEl.style.left = `${(kf.time / 10) * 100}%`;
         keyframeEl.title = `${kf.name}\nTime: ${kf.time.toFixed(2)}s`;
         
         // Highlight if at current time
         if (Math.abs(kf.time - SNM.currentTime) < 0.05) {
-            keyframeEl.classList.add('selected');
+            keyframeEl.style.background = 'linear-gradient(to bottom, #00ffcc, #00ccff)';
+            keyframeEl.style.borderColor = '#00ffff';
         }
         
         // Click to jump
@@ -382,9 +407,20 @@ function updateStats() {
         objectCount.textContent = `${SNM.objects.length} object${SNM.objects.length !== 1 ? 's' : ''}`;
     }
     
-    if (stats && Editor.getSceneStats) {
-        const sceneStats = Editor.getSceneStats();
-        stats.textContent = `Vertices: ${sceneStats.vertices} | Faces: ${sceneStats.faces}`;
+    if (stats) {
+        let vertices = 0;
+        let faces = 0;
+        
+        SNM.objects.forEach(obj => {
+            if (obj.geometry) {
+                vertices += obj.geometry.attributes.position?.count || 0;
+                if (obj.geometry.index) {
+                    faces += obj.geometry.index.count / 3;
+                }
+            }
+        });
+        
+        stats.textContent = `Vertices: ${vertices} | Faces: ${faces}`;
     }
     
     if (status) {
@@ -431,7 +467,7 @@ function setupEventListeners() {
                 case 'delete': Editor.deleteSelected(); break;
                 case 'import': Editor.importModel(); break;
                 case 'export': 
-                    if (confirm('Export as GLB (binary) or JSON (scene data)?')) {
+                    if (confirm('Export as GLB?')) {
                         Editor.exportGLB();
                     } else {
                         Editor.exportJSON();
@@ -501,31 +537,6 @@ function setupEventListeners() {
     Editor.setupKeyboardControls();
     Editor.setupMouseControls();
     
-    // FPS counter
-    let frameCount = 0;
-    let lastTime = performance.now();
-    
-    function updateFPS() {
-        frameCount++;
-        const currentTime = performance.now();
-        
-        if (currentTime >= lastTime + 1000) {
-            const fps = Math.round((frameCount * 1000) / (currentTime - lastTime));
-            const fpsElement = document.getElementById('fps');
-            if (fpsElement) {
-                fpsElement.textContent = `FPS: ${fps}`;
-                fpsElement.style.color = fps >= 50 ? '#00ff00' : fps >= 30 ? '#ffff00' : '#ff0000';
-            }
-            
-            frameCount = 0;
-            lastTime = currentTime;
-        }
-        
-        requestAnimationFrame(updateFPS);
-    }
-    
-    updateFPS();
-    
     console.log('✅ Event listeners setup complete');
 }
 
@@ -550,38 +561,6 @@ window.addEventListener('load', () => {
     setTimeout(() => {
         Editor.addCube();
         console.log('✅ SNM ready!');
-        
-        // Show help
-        setTimeout(() => {
-            alert(`🎮 SNM Controls:
-            
-OBJECT CONTROLS:
-• Click objects to select
-• Drag GIZMO arrows/rings/boxes
-• WASD: Move selected object
-• Q/E: Move up/down
-• R/F: Rotate
-• Z/X: Scale
-• G/R/S: Switch transform mode
-• Ctrl+D: Duplicate
-• Delete: Remove object
-
-CAMERA CONTROLS:
-• Left-click drag: Orbit
-• Right-click drag: Pan
-• Mouse wheel: Zoom
-• Arrow keys: Fine movement
-
-ANIMATION:
-• Space: Play/Pause
-• K: Add keyframe
-• Click timeline: Add/jump
-• Right-click keyframe: Delete
-
-FILE:
-• Import: GLTF/GLB/OBJ/STL/JSON
-• Export: GLB or JSON format`);
-        }, 1000);
     }, 100);
 });
 
