@@ -1,7 +1,6 @@
-// editor.js - WITH REAL TRANSFORM GIZMO
-console.log('🐱 SNM Editor loading...');
+// editor.js - WITH TRANSFORM GIZMO INTEGRATION
+console.log('SNM Editor loading...');
 
-// Primitive creation
 function addCube() {
     const geometry = new THREE.BoxGeometry(1, 1, 1);
     const material = new THREE.MeshStandardMaterial({ 
@@ -18,7 +17,6 @@ function addCube() {
     SNM.objects.push(cube);
     selectObject(cube);
     updateUI();
-    return cube;
 }
 
 function addSphere() {
@@ -37,7 +35,6 @@ function addSphere() {
     SNM.objects.push(sphere);
     selectObject(sphere);
     updateUI();
-    return sphere;
 }
 
 function addCylinder() {
@@ -56,20 +53,15 @@ function addCylinder() {
     SNM.objects.push(cylinder);
     selectObject(cylinder);
     updateUI();
-    return cylinder;
 }
 
-// Selection with Transform Gizmo
 function selectObject(object) {
-    console.log('Selecting:', object?.name || 'none');
-    
     // Remove old selection box
     if (SNM.selectionBox) {
         SNM.scene.remove(SNM.selectionBox);
         SNM.selectionBox = null;
     }
     
-    // Update selected object
     SNM.selectedObject = object;
     
     if (object) {
@@ -79,98 +71,44 @@ function selectObject(object) {
         SNM.scene.add(box);
         SNM.selectionBox = box;
         
-        // Attach transform gizmo to object
-        if (window.transformControls) {
-            window.transformControls.attach(object);
+        // ATTACH TRANSFORM CONTROLS (GIZMO)
+        if (SNM.transformControls) {
+            SNM.transformControls.attach(object);
         }
-    } else {
-        // Detach transform gizmo if no object
-        if (window.transformControls) {
-            window.transformControls.detach();
-        }
+    } else if (SNM.transformControls) {
+        // Detach gizmo if no object selected
+        SNM.transformControls.detach();
     }
     
     updateUI();
 }
 
-// Set Transform Mode (Move/Rotate/Scale)
 function setTransformMode(mode) {
-    if (!window.transformControls) return;
-    
-    window.transformControls.setMode(mode);
-    currentTransformMode = mode;
-    
-    // Update UI buttons
-    document.querySelectorAll('.transform-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.transform === mode);
-    });
-    
-    // Show visual feedback
-    const modeNames = { translate: 'Move', rotate: 'Rotate', scale: 'Scale' };
-    console.log(`Transform: ${modeNames[mode]} (${mode})`);
+    if (SNM.transformControls) {
+        SNM.transformControls.setMode(mode);
+        
+        // Update UI buttons
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.mode === mode) {
+                btn.classList.add('active');
+            }
+        });
+        
+        // Update gizmo info
+        const info = document.getElementById('gizmo-info');
+        if (info) {
+            if (mode === 'translate') {
+                info.textContent = 'Move: Red=X Green=Y Blue=Z';
+            } else if (mode === 'rotate') {
+                info.textContent = 'Rotate: Drag colored rings';
+            } else if (mode === 'scale') {
+                info.textContent = 'Scale: Drag colored boxes';
+            }
+        }
+    }
 }
 
-// Simple transform with arrow keys (alternative to gizmo)
-function setupArrowKeyControls() {
-    window.addEventListener('keydown', (e) => {
-        if (!SNM.selectedObject) return;
-        
-        const speed = e.shiftKey ? 0.5 : 0.1;
-        const obj = SNM.selectedObject;
-        
-        switch(e.key) {
-            case 'ArrowUp':
-                e.preventDefault();
-                obj.position.z -= speed;
-                break;
-            case 'ArrowDown':
-                e.preventDefault();
-                obj.position.z += speed;
-                break;
-            case 'ArrowLeft':
-                e.preventDefault();
-                obj.position.x -= speed;
-                break;
-            case 'ArrowRight':
-                e.preventDefault();
-                obj.position.x += speed;
-                break;
-            case 'PageUp':
-                e.preventDefault();
-                obj.position.y += speed;
-                break;
-            case 'PageDown':
-                e.preventDefault();
-                obj.position.y -= speed;
-                break;
-            case '[':
-                e.preventDefault();
-                obj.rotation.y += 0.1;
-                break;
-            case ']':
-                e.preventDefault();
-                obj.rotation.y -= 0.1;
-                break;
-            case '-':
-                e.preventDefault();
-                obj.scale.multiplyScalar(0.9);
-                break;
-            case '=':
-                e.preventDefault();
-                obj.scale.multiplyScalar(1.1);
-                break;
-        }
-        
-        // Update selection box
-        if (SNM.selectionBox) {
-            SNM.selectionBox.update();
-        }
-        
-        updateUI();
-    });
-}
-
-// Delete function
 function deleteSelected() {
     if (!SNM.selectedObject) return;
     
@@ -181,19 +119,21 @@ function deleteSelected() {
         SNM.selectionBox = null;
     }
     
-    if (window.transformControls) {
-        window.transformControls.detach();
+    if (SNM.transformControls) {
+        SNM.transformControls.detach();
     }
     
     const index = SNM.objects.indexOf(SNM.selectedObject);
-    if (index > -1) SNM.objects.splice(index, 1);
+    if (index > -1) {
+        SNM.objects.splice(index, 1);
+    }
     
     SNM.animations = SNM.animations.filter(anim => anim.object !== SNM.selectedObject);
+    
     SNM.selectedObject = null;
     updateUI();
 }
 
-// Animation functions
 function addKeyframe() {
     if (!SNM.selectedObject) {
         alert('Select an object first!');
@@ -203,7 +143,7 @@ function addKeyframe() {
     const keyframe = {
         time: SNM.currentTime,
         position: SNM.selectedObject.position.clone(),
-        rotation: new THREE.Euler().copy(SNM.selectedObject.rotation),
+        rotation: SNM.selectedObject.rotation.clone(),
         scale: SNM.selectedObject.scale.clone()
     };
     
@@ -213,32 +153,20 @@ function addKeyframe() {
         SNM.animations.push(anim);
     }
     
-    anim.keyframes = anim.keyframes.filter(kf => Math.abs(kf.time - SNM.currentTime) > 0.1);
     anim.keyframes.push(keyframe);
     anim.keyframes.sort((a, b) => a.time - b.time);
     
     updateUI();
 }
 
-function clearKeyframes() {
-    if (!SNM.selectedObject) {
-        alert('Select an object first!');
-        return;
-    }
-    
-    SNM.animations = SNM.animations.filter(anim => anim.object !== SNM.selectedObject);
-    updateUI();
-}
-
-// Export function
 function exportGLB() {
     if (!SNM.scene) return;
     
     // Remove helpers before export
-    const helpers = [];
+    const tempHelpers = [];
     SNM.scene.children.forEach(child => {
-        if (child.name.includes('selection_box') || child.name.includes('transform')) {
-            helpers.push(child);
+        if (child.name === 'selection_box' || child.type === 'TransformControls') {
+            tempHelpers.push(child);
             SNM.scene.remove(child);
         }
     });
@@ -258,14 +186,13 @@ function exportGLB() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         
-        alert('Model exported!');
+        alert('Model exported as snm_model.glb');
     }, { binary: true });
     
     // Restore helpers
-    helpers.forEach(helper => SNM.scene.add(helper));
+    tempHelpers.forEach(helper => SNM.scene.add(helper));
 }
 
-// Playback control
 function togglePlayback() {
     SNM.isPlaying = !SNM.isPlaying;
     const playBtn = document.getElementById('play-btn');
@@ -274,15 +201,64 @@ function togglePlayback() {
     }
 }
 
-// Initialize controls
-function initControls() {
-    setupArrowKeyControls();
-    
-    // Default to move mode
-    setTimeout(() => setTransformMode('translate'), 100);
+// Arrow key controls for precise movement
+function setupKeyboardControls() {
+    window.addEventListener('keydown', (e) => {
+        if (!SNM.selectedObject) return;
+        
+        const obj = SNM.selectedObject;
+        const moveSpeed = e.shiftKey ? 0.5 : 0.1;
+        const rotateSpeed = 0.1;
+        const scaleSpeed = 0.1;
+        
+        // Movement
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            obj.position.z -= moveSpeed;
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            obj.position.z += moveSpeed;
+        } else if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            obj.position.x -= moveSpeed;
+        } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            obj.position.x += moveSpeed;
+        } else if (e.key === 'PageUp') {
+            e.preventDefault();
+            obj.position.y += moveSpeed;
+        } else if (e.key === 'PageDown') {
+            e.preventDefault();
+            obj.position.y -= moveSpeed;
+        }
+        
+        // Rotation
+        else if (e.key === 'q') {
+            e.preventDefault();
+            obj.rotation.y -= rotateSpeed;
+        } else if (e.key === 'e') {
+            e.preventDefault();
+            obj.rotation.y += rotateSpeed;
+        }
+        
+        // Scale
+        else if (e.key === 'z') {
+            e.preventDefault();
+            obj.scale.multiplyScalar(1 - scaleSpeed);
+        } else if (e.key === 'x') {
+            e.preventDefault();
+            obj.scale.multiplyScalar(1 + scaleSpeed);
+        }
+        
+        // Update selection box
+        if (SNM.selectionBox) {
+            SNM.selectionBox.update();
+        }
+        
+        updateUI();
+    });
 }
 
-// Expose all functions
 window.Editor = {
     addCube,
     addSphere,
@@ -290,11 +266,8 @@ window.Editor = {
     selectObject,
     deleteSelected,
     addKeyframe,
-    clearKeyframes,
     exportGLB,
     togglePlayback,
     setTransformMode,
-    initControls
+    setupKeyboardControls
 };
-
-console.log('✅ SNM Editor loaded!');
