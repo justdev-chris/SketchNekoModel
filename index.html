@@ -26,6 +26,7 @@
                     <button class="tool-btn" data-tool="add-cube">Cube</button>
                     <button class="tool-btn" data-tool="add-sphere">Sphere</button>
                     <button class="tool-btn" data-tool="add-cylinder">Cylinder</button>
+                    <button class="tool-btn" data-tool="add-plane">Plane</button>
                 </div>
             </div>
             
@@ -35,15 +36,16 @@
                     <button class="tool-btn" data-tool="delete">Delete</button>
                     <button class="tool-btn" data-tool="export">Export</button>
                     <button class="tool-btn" data-tool="import">Import</button>
+                    <button class="tool-btn" onclick="Editor.duplicateSelected()" title="Duplicate (Ctrl+D)">Duplicate</button>
                 </div>
             </div>
             
             <div class="tool-section">
                 <h4>Transform</h4>
                 <div class="transform-buttons">
-                    <button class="mode-btn active" data-mode="translate">Move</button>
-                    <button class="mode-btn" data-mode="rotate">Rotate</button>
-                    <button class="mode-btn" data-mode="scale">Scale</button>
+                    <button class="mode-btn active" data-mode="translate" title="Move (G)">Move</button>
+                    <button class="mode-btn" data-mode="rotate" title="Rotate (R)">Rotate</button>
+                    <button class="mode-btn" data-mode="scale" title="Scale (S)">Scale</button>
                 </div>
             </div>
             
@@ -52,6 +54,15 @@
                 <div class="tool-buttons">
                     <button id="play-btn">▶ Play</button>
                     <button id="add-keyframe">+ Keyframe</button>
+                </div>
+            </div>
+            
+            <div class="tool-section">
+                <h4>Copy/Paste</h4>
+                <div class="tool-buttons">
+                    <button class="tool-btn" onclick="Editor.copySelected()" title="Copy (Ctrl+C)">Copy</button>
+                    <button class="tool-btn" onclick="Editor.pasteObject()" title="Paste (Ctrl+V)">Paste</button>
+                    <button class="tool-btn" onclick="Editor.cutSelected()" title="Cut (Ctrl+X)">Cut</button>
                 </div>
             </div>
         </div>
@@ -110,6 +121,7 @@
         <div id="statusbar">
             <span id="status">Ready</span>
             <span id="stats">Vertices: 0 | Faces: 0</span>
+            <span id="clipboard-status">📋 Empty</span>
             <span id="fps">FPS: 60</span>
         </div>
     </div>
