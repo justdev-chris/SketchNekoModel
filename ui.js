@@ -1,4 +1,5 @@
-// ui.js - ALL UI FUNCTIONS COMPLETE
+// ui.js - FIXED VERSION
+console.log('🐱 SNM UI loading...');
 
 // Update object list in hierarchy panel
 function updateObjectList() {
@@ -59,8 +60,8 @@ function updateProperties() {
             obj.position.setComponent(idx, value);
             
             // Update selection box
-            if (SNM.selectionBox) {
-                SNM.selectionBox.update();
+            if (currentSelectionBox) {
+                currentSelectionBox.update();
             }
         };
         
@@ -87,8 +88,8 @@ function updateProperties() {
             obj.rotation.setComponent(idx, value * (Math.PI / 180));
             
             // Update selection box
-            if (SNM.selectionBox) {
-                SNM.selectionBox.update();
+            if (currentSelectionBox) {
+                currentSelectionBox.update();
             }
         };
         
@@ -134,8 +135,7 @@ function setupEventListeners() {
     console.log('Setting up event listeners...');
     
     // Toolbar buttons
-    const buttons = document.querySelectorAll('.tool-btn');
-    buttons.forEach(btn => {
+    document.querySelectorAll('.tool-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const tool = e.target.getAttribute('data-tool');
             console.log('Tool clicked:', tool);
@@ -221,14 +221,14 @@ function setupEventListeners() {
         });
     }
     
-    console.log('Event listeners setup complete');
+    console.log('✅ Event listeners setup complete');
 }
 
 // Initialize when page loads
-window.onload = function() {
-    console.log('SNM Editor loading...');
+window.addEventListener('load', function() {
+    console.log('🐱 SNM Editor initializing...');
     
-    // Initialize Three.js
+    // Initialize Three.js scene
     SNM.init();
     
     // Setup UI
@@ -238,14 +238,8 @@ window.onload = function() {
     // Add a default cube to start with
     setTimeout(() => {
         Editor.addCube();
-        console.log('SNM Editor ready!');
+        console.log('✅ SNM Editor ready!');
     }, 100);
-};
+});
 
-// Expose UI functions globally
-window.UI = {
-    updateUI,
-    updateObjectList,
-    updateProperties,
-    setupEventListeners
-};
+console.log('✅ SNM UI loaded!');
