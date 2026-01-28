@@ -6,7 +6,7 @@
 
 body {
     font-family: 'Segoe UI', sans-serif;
-    background: #1e1e1e;
+    background: #1a1a1a;
     color: #fff;
     height: 100vh;
     overflow: hidden;
@@ -20,60 +20,115 @@ body {
 
 /* Top Toolbar */
 #toolbar {
-    background: #252525;
-    padding: 10px;
-    border-bottom: 2px solid #333;
+    background: linear-gradient(to right, #252525, #2d2d2d);
+    padding: 8px 12px;
+    border-bottom: 2px solid #444;
     display: flex;
-    gap: 10px;
+    gap: 15px;
+    flex-wrap: wrap;
+    min-height: 50px;
+}
+
+.tool-group {
+    display: flex;
+    gap: 8px;
+    padding-right: 15px;
+    border-right: 1px solid #444;
+}
+
+.tool-group:last-child {
+    border-right: none;
 }
 
 .tool-btn {
-    background: #444;
+    background: #3a3a3a;
     color: white;
     border: none;
     padding: 8px 16px;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s;
+    font-size: 14px;
+    min-width: 60px;
 }
 
 .tool-btn:hover {
-    background: #555;
+    background: #4a4a4a;
+    transform: translateY(-1px);
 }
 
-.tool-btn:active {
-    background: #666;
+.tool-btn:active, .tool-btn.active {
+    background: #0066cc;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
 }
 
-/* Main Content Area */
+.mode-btn.active {
+    background: #ff9900;
+}
+
+/* Dropdown */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background: #3a3a3a;
+    min-width: 120px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+    z-index: 1000;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+.dropdown-content a {
+    color: white;
+    padding: 10px 16px;
+    text-decoration: none;
+    display: block;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.dropdown-content a:hover {
+    background: #0066cc;
+}
+
+/* Main Content */
 #main {
     display: flex;
     flex: 1;
     overflow: hidden;
 }
 
-/* Panels (Sidebars) */
+/* Panels */
 .panel {
-    background: #2d2d2d;
+    background: #252525;
     padding: 15px;
     overflow-y: auto;
     min-width: 250px;
-    border-left: 1px solid #444;
-    border-right: 1px solid #444;
+    border: 1px solid #333;
 }
 
 #hierarchy-panel {
-    border-right: 1px solid #444;
+    border-right: 2px solid #444;
 }
 
 #properties-panel {
-    border-left: 1px solid #444;
+    border-left: 2px solid #444;
 }
 
 /* Viewport */
 #viewport-container {
     flex: 1;
     position: relative;
+    background: #1a1a1a;
 }
 
 #viewport {
@@ -82,23 +137,25 @@ body {
     display: block;
 }
 
-/* Timeline */
-#timeline {
-    background: #252525;
-    padding: 10px;
-    border-top: 2px solid #333;
-    height: 120px;
+#viewport-overlay {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    pointer-events: none;
 }
 
-#timeline-controls {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 10px;
+#coordinates {
+    background: rgba(0,0,0,0.7);
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+    margin-bottom: 5px;
 }
 
-#time-slider {
-    flex: 1;
+#transform-info {
+    color: #aaa;
+    font-size: 11px;
 }
 
 /* Object List */
@@ -107,25 +164,41 @@ body {
 }
 
 .object-item {
-    padding: 8px;
-    background: #3a3a3a;
+    padding: 10px;
+    background: #333;
     margin: 4px 0;
     border-radius: 4px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .object-item:hover {
-    background: #4a4a4a;
+    background: #3a3a3a;
+    transform: translateX(2px);
 }
 
 .object-item.selected {
-    background: #0066cc;
+    background: linear-gradient(to right, #0066cc, #0088ff);
+    border-left: 3px solid #00ccff;
 }
 
-/* Property Controls */
+.object-icon {
+    width: 16px;
+    height: 16px;
+    background: #666;
+    border-radius: 3px;
+    margin-right: 8px;
+}
+
+/* Property Editor */
 .property-group {
     margin: 15px 0;
+    padding: 12px;
+    background: #2d2d2d;
+    border-radius: 6px;
 }
 
 .property-row {
@@ -136,32 +209,172 @@ body {
 
 .property-row label {
     width: 80px;
-    font-size: 14px;
+    font-size: 13px;
+    color: #aaa;
 }
 
-.property-row input {
+.property-row input, .property-row select {
     flex: 1;
-    padding: 6px;
+    padding: 8px;
     background: #3a3a3a;
     border: 1px solid #555;
     color: white;
     border-radius: 4px;
+    font-size: 14px;
 }
 
-/* Keyframe Track */
-#keyframe-track {
-    background: #333;
-    height: 40px;
+.property-row input:focus, .property-row select:focus {
+    border-color: #0066cc;
+    outline: none;
+}
+
+/* Neko Tools */
+.neko-btn {
+    background: linear-gradient(135deg, #ff66b2, #ff3366);
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin: 5px;
+    width: calc(100% - 10px);
+    transition: transform 0.2s;
+}
+
+.neko-btn:hover {
+    transform: scale(1.05);
+}
+
+/* Timeline */
+#timeline {
+    background: #252525;
+    border-top: 2px solid #444;
+    height: 140px;
+    padding: 10px;
+}
+
+#timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+#time-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+#time-controls button {
+    background: #3a3a3a;
+    color: white;
+    border: none;
+    padding: 6px 12px;
     border-radius: 4px;
+    cursor: pointer;
+}
+
+#time-controls button:hover {
+    background: #4a4a4a;
+}
+
+#time-slider {
+    flex: 1;
+    height: 6px;
+    background: #333;
+    border-radius: 3px;
+    outline: none;
+}
+
+#timeline-track {
+    height: 60px;
+    background: #2d2d2d;
+    border-radius: 6px;
     position: relative;
+    overflow-x: auto;
+    padding: 10px 0;
+}
+
+#keyframes-container {
+    position: relative;
+    height: 100%;
+    min-width: 1000px;
 }
 
 .keyframe {
     position: absolute;
-    width: 10px;
-    height: 20px;
+    width: 12px;
+    height: 30px;
     background: #ff9900;
-    border-radius: 2px;
-    top: 10px;
+    border-radius: 4px;
+    top: 15px;
     cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid #ffcc00;
+}
+
+.keyframe:hover {
+    transform: scale(1.2);
+    background: #ffcc00;
+}
+
+.keyframe.selected {
+    background: #00ccff;
+    border-color: #00ffff;
+}
+
+#playhead {
+    position: absolute;
+    width: 2px;
+    height: 100%;
+    background: #00ffff;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    box-shadow: 0 0 10px #00ffff;
+}
+
+/* Status Bar */
+#statusbar {
+    background: #252525;
+    padding: 8px 15px;
+    border-top: 1px solid #444;
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #aaa;
+}
+
+#fps-counter {
+    font-family: monospace;
+    color: #00ff00;
+}
+
+/* Loading Animation */
+.loading {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+/* Transform Gizmo Overrides */
+.transform-gizmo {
+    z-index: 1000;
+}
+
+.transform-axis-x {
+    color: #ff3333 !important;
+}
+
+.transform-axis-y {
+    color: #33ff33 !important;
+}
+
+.transform-axis-z {
+    color: #3366ff !important;
 }
