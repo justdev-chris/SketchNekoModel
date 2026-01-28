@@ -1,597 +1,119 @@
-/* style.css - COMPLETE STYLES FOR SNM */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-}
-
-body {
-    background: #0f0f0f;
-    color: #e0e0e0;
-    height: 100vh;
-    overflow: hidden;
-    font-size: 14px;
-}
-
-#app {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    background: #1a1a1a;
-}
-
-/* ===== TOOLBAR ===== */
-#toolbar {
-    background: linear-gradient(to bottom, #2a2a2a, #222);
-    padding: 12px 20px;
-    display: flex;
-    gap: 30px;
-    align-items: center;
-    border-bottom: 2px solid #333;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-    min-height: 70px;
-    flex-wrap: wrap;
-}
-
-.tool-section {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.tool-section h4 {
-    color: #aaa;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 4px;
-}
-
-.tool-buttons {
-    display: flex;
-    gap: 8px;
-}
-
-.tool-btn, #play-btn, #add-keyframe {
-    background: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
-    color: #fff;
-    border: 1px solid #444;
-    padding: 10px 18px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 13px;
-    transition: all 0.2s;
-    min-width: 80px;
-    text-align: center;
-}
-
-.tool-btn:hover, #play-btn:hover, #add-keyframe:hover {
-    background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
-    border-color: #666;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-}
-
-.tool-btn:active, #play-btn:active, #add-keyframe:active {
-    background: linear-gradient(to bottom, #2a2a2a, #1a1a1a);
-    transform: translateY(0);
-}
-
-/* Transform Buttons */
-.transform-buttons {
-    display: flex;
-    gap: 4px;
-    background: #333;
-    border-radius: 6px;
-    padding: 2px;
-    border: 1px solid #444;
-}
-
-.mode-btn {
-    background: transparent;
-    color: #aaa;
-    border: none;
-    padding: 10px 18px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 13px;
-    transition: all 0.2s;
-    border-radius: 4px;
-    min-width: 70px;
-}
-
-.mode-btn:hover {
-    background: #444;
-    color: #fff;
-}
-
-.mode-btn.active {
-    background: linear-gradient(135deg, #0066cc, #0088ff);
-    color: white;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
-}
-
-/* ===== MAIN CONTENT ===== */
-#main {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-    background: #151515;
-}
-
-/* ===== PANELS ===== */
-.panel {
-    background: linear-gradient(to bottom, #252525, #1d1d1d);
-    display: flex;
-    flex-direction: column;
-    border: 1px solid #333;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
-}
-
-.panel-header {
-    background: linear-gradient(to bottom, #2a2a2a, #222);
-    padding: 15px 20px;
-    border-bottom: 1px solid #333;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.panel-header h3 {
-    color: #fff;
-    font-size: 16px;
-    font-weight: 600;
-}
-
-.panel-header span {
-    color: #888;
-    font-size: 12px;
-    font-weight: 500;
-}
-
-.scrollable {
-    overflow-y: auto;
-    overflow-x: hidden;
-    flex: 1;
-}
-
-/* Left Panel - Hierarchy */
-#hierarchy-panel {
-    width: 280px;
-    min-width: 280px;
-    border-right: 2px solid #333;
-}
-
-#object-list {
-    padding: 10px;
-}
-
-.object-item {
-    padding: 12px 15px;
-    background: linear-gradient(to right, #2a2a2a, #333);
-    margin: 6px 0;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s;
-    border: 1px solid #444;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    position: relative;
-}
-
-.object-item:hover {
-    background: linear-gradient(to right, #3a3a3a, #444);
-    border-color: #666;
-    transform: translateX(3px);
-}
-
-.object-item.selected {
-    background: linear-gradient(135deg, #0066cc, #0088ff);
-    border-color: #00aaff;
-    box-shadow: 0 0 15px rgba(0, 102, 204, 0.3);
-}
-
-.object-item::before {
-    content: '';
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #666;
-}
-
-.object-item.cube::before { background: #ff6666; }
-.object-item.sphere::before { background: #66ff66; }
-.object-item.cylinder::before { background: #6666ff; }
-
-/* Right Panel - Properties */
-#properties-panel {
-    width: 320px;
-    min-width: 320px;
-    border-left: 2px solid #333;
-}
-
-#properties {
-    padding: 20px;
-}
-
-.property-group {
-    background: #2a2a2a;
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    border: 1px solid #444;
-}
-
-.property-group h4 {
-    color: #ddd;
-    margin-bottom: 15px;
-    font-size: 14px;
-    font-weight: 600;
-    border-bottom: 1px solid #444;
-    padding-bottom: 8px;
-}
-
-.property-row {
-    display: flex;
-    align-items: center;
-    margin: 12px 0;
-    padding: 8px 0;
-    border-bottom: 1px solid #333;
-}
-
-.property-row:last-child {
-    border-bottom: none;
-}
-
-.property-row label {
-    width: 80px;
-    color: #aaa;
-    font-size: 13px;
-    font-weight: 500;
-}
-
-.property-row input[type="number"],
-.property-row input[type="text"] {
-    flex: 1;
-    padding: 10px 12px;
-    background: #3a3a3a;
-    border: 1px solid #555;
-    color: white;
-    border-radius: 6px;
-    font-size: 14px;
-    transition: all 0.2s;
-}
-
-.property-row input[type="number"]:focus,
-.property-row input[type="text"]:focus {
-    border-color: #0066cc;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.3);
-}
-
-.property-row input[type="range"] {
-    flex: 1;
-    height: 6px;
-    background: #444;
-    border-radius: 3px;
-    outline: none;
-    -webkit-appearance: none;
-}
-
-.property-row input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 18px;
-    height: 18px;
-    background: #0066cc;
-    border-radius: 50%;
-    cursor: pointer;
-    border: 2px solid #fff;
-}
-
-.property-row input[type="color"] {
-    width: 100%;
-    height: 40px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    border-radius: 6px;
-    overflow: hidden;
-    border: 1px solid #555;
-}
-
-/* ===== VIEWPORT ===== */
-#viewport-container {
-    flex: 1;
-    background: #0a0a0a;
-    position: relative;
-    overflow: hidden;
-}
-
-#viewport {
-    width: 100%;
-    height: 100%;
-    display: block;
-}
-
-#gizmo-info {
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
-    right: 20px;
-    background: rgba(0, 0, 0, 0.85);
-    color: white;
-    padding: 12px 18px;
-    border-radius: 8px;
-    font-size: 13px;
-    pointer-events: none;
-    border: 1px solid #444;
-    backdrop-filter: blur(5px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-#gizmo-mode {
-    font-weight: 600;
-    color: #00ccff;
-}
-
-#coordinates {
-    font-family: 'Courier New', monospace;
-    font-size: 12px;
-    color: #aaa;
-}
-
-/* ===== TIMELINE ===== */
-#timeline {
-    height: 160px;
-    border-top: 2px solid #333;
-    background: linear-gradient(to bottom, #252525, #1d1d1d);
-}
-
-#time-controls {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-#time-display {
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    font-weight: bold;
-    color: #00ccff;
-    min-width: 80px;
-}
-
-#time-slider {
-    flex: 1;
-    height: 8px;
-    background: #333;
-    border-radius: 4px;
-    outline: none;
-    -webkit-appearance: none;
-    min-width: 200px;
-}
-
-#time-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 20px;
-    height: 20px;
-    background: #00ccff;
-    border-radius: 50%;
-    cursor: pointer;
-    border: 2px solid #fff;
-    box-shadow: 0 0 10px #00ccff;
-}
-
-#clear-keyframes {
-    background: #ff3333;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-}
-
-#clear-keyframes:hover {
-    background: #ff5555;
-}
-
-#timeline-track {
-    flex: 1;
-    background: #2a2a2a;
-    margin: 15px 20px;
-    border-radius: 8px;
-    position: relative;
-    overflow: hidden;
-    border: 1px solid #444;
-}
-
-#keyframes-container {
-    position: relative;
-    height: 100%;
-}
-
-.keyframe {
-    position: absolute;
-    width: 14px;
-    height: 30px;
-    background: linear-gradient(to bottom, #ff9900, #ff6600);
-    border-radius: 4px;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
-    transition: all 0.2s;
-    border: 2px solid #ffcc00;
-    box-shadow: 0 2px 6px rgba(255, 153, 0, 0.3);
-    z-index: 10;
-}
-
-.keyframe:hover {
-    transform: translateY(-50%) scale(1.3);
-    background: linear-gradient(to bottom, #ffcc00, #ff9900);
-    box-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
-}
-
-.keyframe.selected {
-    background: linear-gradient(to bottom, #00ffcc, #00ccff);
-    border-color: #00ffff;
-    box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
-}
-
-#playhead {
-    position: absolute;
-    width: 2px;
-    height: 100%;
-    background: #00ffff;
-    top: 0;
-    left: 0;
-    pointer-events: none;
-    box-shadow: 0 0 10px #00ffff;
-    z-index: 5;
-}
-
-/* ===== STATUSBAR ===== */
-#statusbar {
-    background: linear-gradient(to right, #2a2a2a, #222);
-    padding: 10px 20px;
-    border-top: 1px solid #333;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 12px;
-    color: #888;
-}
-
-#status {
-    color: #00ff00;
-    font-weight: 600;
-}
-
-#stats {
-    font-family: 'Courier New', monospace;
-}
-
-#fps {
-    font-family: 'Courier New', monospace;
-    color: #00ccff;
-}
-
-/* ===== SCROLLBARS ===== */
-::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-}
-
-::-webkit-scrollbar-track {
-    background: #222;
-    border-radius: 5px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #444;
-    border-radius: 5px;
-    border: 2px solid #222;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: #555;
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 1200px) {
-    #hierarchy-panel {
-        width: 240px;
-        min-width: 240px;
-    }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sketch Neko Model</title>
+    <link rel="stylesheet" href="style.css">
     
-    #properties-panel {
-        width: 280px;
-        min-width: 280px;
-    }
-}
-
-@media (max-width: 900px) {
-    #toolbar {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
-        height: auto;
-        padding: 15px;
-    }
+    <!-- Three.js Core -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
-    .tool-section {
-        width: 100%;
-    }
-    
-    #main {
-        flex-direction: column;
-    }
-    
-    .panel {
-        width: 100% !important;
-        min-width: auto !important;
-        max-height: 300px;
-    }
-    
-    #hierarchy-panel {
-        border-right: none;
-        border-bottom: 2px solid #333;
-    }
-    
-    #properties-panel {
-        border-left: none;
-        border-top: 2px solid #333;
-    }
-}
+    <!-- Three.js Extensions -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Top Toolbar -->
+        <div id="toolbar">
+            <div class="tool-section">
+                <h4>Create</h4>
+                <div class="tool-buttons">
+                    <button class="tool-btn" data-tool="add-cube">Cube</button>
+                    <button class="tool-btn" data-tool="add-sphere">Sphere</button>
+                    <button class="tool-btn" data-tool="add-cylinder">Cylinder</button>
+                </div>
+            </div>
+            
+            <div class="tool-section">
+                <h4>Edit</h4>
+                <div class="tool-buttons">
+                    <button class="tool-btn" data-tool="delete">Delete</button>
+                    <button class="tool-btn" data-tool="export">Export</button>
+                </div>
+            </div>
+            
+            <div class="tool-section">
+                <h4>Transform</h4>
+                <div class="transform-buttons">
+                    <button class="mode-btn active" data-mode="translate">Move</button>
+                    <button class="mode-btn" data-mode="rotate">Rotate</button>
+                    <button class="mode-btn" data-mode="scale">Scale</button>
+                </div>
+            </div>
+            
+            <div class="tool-section">
+                <h4>Animation</h4>
+                <div class="tool-buttons">
+                    <button id="play-btn">▶ Play</button>
+                    <button id="add-keyframe">+ Keyframe</button>
+                </div>
+            </div>
+        </div>
 
-/* ===== TRANSFORM GIZMO CUSTOMIZATION ===== */
-.transform-controls .axis-x {
-    color: #ff3333 !important;
-}
+        <!-- Main Content -->
+        <div id="main">
+            <!-- Left Panel - Hierarchy -->
+            <div id="hierarchy-panel" class="panel">
+                <div class="panel-header">
+                    <h3>Scene</h3>
+                    <span id="object-count">0 objects</span>
+                </div>
+                <div id="object-list" class="scrollable">
+                    <!-- Objects will be added here -->
+                </div>
+            </div>
 
-.transform-controls .axis-y {
-    color: #33ff33 !important;
-}
+            <!-- Center - 3D Viewport -->
+            <div id="viewport-container">
+                <canvas id="viewport"></canvas>
+                <div id="gizmo-info">
+                    <span id="gizmo-mode">Move: Red=X Green=Y Blue=Z</span>
+                    <span id="coordinates">X: 0.00 Y: 0.00 Z: 0.00</span>
+                </div>
+            </div>
 
-.transform-controls .axis-z {
-    color: #3366ff !important;
-}
+            <!-- Right Panel - Properties -->
+            <div id="properties-panel" class="panel">
+                <div class="panel-header">
+                    <h3>Properties</h3>
+                    <span id="selected-name">None</span>
+                </div>
+                <div id="properties" class="scrollable">
+                    <!-- Properties will be added here -->
+                </div>
+            </div>
+        </div>
 
-/* ===== UTILITY CLASSES ===== */
-.hidden {
-    display: none !important;
-}
+        <!-- Bottom - Timeline -->
+        <div id="timeline" class="panel">
+            <div class="panel-header">
+                <h3>Timeline</h3>
+                <div id="time-controls">
+                    <span id="time-display">0.00s</span>
+                    <input type="range" id="time-slider" min="0" max="100" value="0">
+                    <button id="clear-keyframes">Clear</button>
+                </div>
+            </div>
+            <div id="timeline-track">
+                <div id="keyframes-container"></div>
+                <div id="playhead"></div>
+            </div>
+        </div>
 
-.loading {
-    animation: pulse 1.5s infinite;
-}
+        <!-- Status Bar -->
+        <div id="statusbar">
+            <span id="status">Ready</span>
+            <span id="stats">Vertices: 0 | Faces: 0</span>
+            <span id="fps">FPS: 60</span>
+        </div>
+    </div>
 
-@keyframes pulse {
-    0% { opacity: 0.6; }
-    50% { opacity: 1; }
-    100% { opacity: 0.6; }
-}
-
-/* ===== FOCUS STATES ===== */
-*:focus {
-    outline: 2px solid #00aaff;
-    outline-offset: 2px;
-}
-
-/* ===== SELECTION ===== */
-::selection {
-    background: #0066cc;
-    color: white;
-}
-
-::-moz-selection {
-    background: #0066cc;
-    color: white;
-}
+    <!-- Our Scripts -->
+    <script src="core.js"></script>
+    <script src="editor.js"></script>
+    <script src="ui.js"></script>
+</body>
+</html>
