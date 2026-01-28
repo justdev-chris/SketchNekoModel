@@ -1,6 +1,129 @@
 // editor.js - COMPLETE WITH ALL FEATURES
 console.log('SNM Editor loading...');
 
+// ===== COPY/PASTE SYSTEM =====
+let clipboard = null;
+
+function copySelected() {
+    if (!SNM.selectedObject) {
+        console.log('No object selected to copy');
+        return null;
+    }
+    
+    const original = SNM.selectedObject;
+    
+    // Store object data in clipboard
+    clipboard = {
+        type: original.userData?.type || 'cube',
+        name: original.name + ' (Copy)',
+        position: original.position.clone(),
+        rotation: original.rotation.clone(),
+        scale: original.scale.clone(),
+        material: {
+            color: original.material.color.clone(),
+            metalness: original.material.metalness,
+            roughness: original.material.roughness
+        },
+        geometry: original.geometry.type,
+        userData: JSON.parse(JSON.stringify(original.userData || {}))
+    };
+    
+    console.log('📋 Copied:', clipboard.name);
+    
+    // Update UI to show clipboard status
+    updateClipboardStatus();
+    return clipboard;
+}
+
+function pasteObject() {
+    if (!clipboard) {
+        console.log('📋 Clipboard is empty');
+        return null;
+    }
+    
+    let newObject;
+    
+    // Create new object based on type
+    switch(clipboard.type) {
+        case 'cube':
+            newObject = Editor.addCube();
+            break;
+        case 'sphere':
+            newObject = Editor.addSphere();
+            break;
+        case 'cylinder':
+            newObject = Editor.addCylinder();
+            break;
+        case 'plane':
+            newObject = Editor.addPlane();
+            break;
+        default:
+            console.error('Unknown object type:', clipboard.type);
+            return null;
+    }
+    
+    // Apply copied properties
+    if (newObject) {
+        newObject.name = clipboard.name;
+        newObject.position.copy(clipboard.position);
+        newObject.rotation.copy(clipboard.rotation);
+        newObject.scale.copy(clipboard.scale);
+        newObject.material.color.copy(clipboard.material.color);
+        newObject.material.metalness = clipboard.material.metalness;
+        newObject.material.roughness = clipboard.material.roughness;
+        newObject.material.needsUpdate = true;
+        
+        // Offset slightly so we can see the copy
+        newObject.position.x += 1;
+        newObject.position.z += 1;
+        
+        // Copy user data
+        newObject.userData = { ...clipboard.userData };
+        newObject.userData.id = Date.now(); // Give it a new ID
+        
+        console.log('📝 Pasted:', newObject.name);
+        
+        // Update clipboard name for next paste
+        clipboard.name = clipboard.name.replace(/ \(\d+\)$/, '') + ' (Copy)';
+        updateClipboardStatus();
+        
+        return newObject;
+    }
+    
+    return null;
+}
+
+function cutSelected() {
+    if (!SNM.selectedObject) {
+        console.log('No object selected to cut');
+        return;
+    }
+    
+    copySelected();
+    deleteSelected();
+    console.log('✂️ Cut and copied to clipboard');
+}
+
+function updateClipboardStatus() {
+    const status = document.getElementById('clipboard-status');
+    if (status) {
+        if (clipboard) {
+            status.textContent = `📋 ${clipboard.type}: ${clipboard.name}`;
+            status.style.color = '#00ff00';
+            status.title = 'Click to paste';
+            status.style.cursor = 'pointer';
+            
+            // Click to paste
+            status.onclick = pasteObject;
+        } else {
+            status.textContent = '📋 Empty';
+            status.style.color = '#888';
+            status.title = '';
+            status.style.cursor = 'default';
+        }
+    }
+}
+
 // ===== PRIMITIVE CREATION =====
 function addCube() {
     if (!SNM.scene) {
@@ -460,7 +583,8 @@ function exportJSON() {
 // ===== CONTROLS =====
 function setupKeyboardControls() {
     window.addEventListener('keydown', (e) => {
-        if (!SNM.selectedObject || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA';
+        if (isInput) return;
         
         const obj = SNM.selectedObject;
         const move = e.shiftKey ? 0.5 : 0.1;
@@ -468,76 +592,85 @@ function setupKeyboardControls() {
         const scale = 0.1;
         
         // Prevent default for game controls
-        const gameKeys = ['w', 'a', 's', 'd', 'q', 'e', 'r', 'f', 'z', 'x', ' ', 'g', 'r', 's'];
+        const gameKeys = ['w', 'a', 's', 'd', 'q', 'e', 'r', 'f', 'z', 'x', ' ', 'g', 'r', 's', 'c', 'v'];
         if (gameKeys.includes(e.key.toLowerCase())) {
             e.preventDefault();
         }
         
-        switch(e.key.toLowerCase()) {
-            // WASD Movement
-            case 'w': obj.position.z -= move; break;
-            case 's': obj.position.z += move; break;
-            case 'a': obj.position.x -= move; break;
-            case 'd': obj.position.x += move; break;
-            
-            // Arrow keys (alternative)
-            case 'arrowup': obj.position.z -= move; break;
-            case 'arrowdown': obj.position.z += move; break;
-            case 'arrowleft': obj.position.x -= move; break;
-            case 'arrowright': obj.position.x += move; break;
-            
-            // Vertical movement
-            case 'q': obj.position.y -= move; break;
-            case 'e': obj.position.y += move; break;
-            case 'pageup': obj.position.y += move; break;
-            case 'pagedown': obj.position.y -= move; break;
-            
-            // Rotation
-            case 'r': 
-                if (e.ctrlKey) {
-                    setTransformMode('rotate');
-                } else {
-                    obj.rotation.y += rotate; 
-                }
-                break;
-            case 'f': obj.rotation.y -= rotate; break;
-            
-            // Scale
-            case 'z': 
-                if (e.ctrlKey) {
-                    // Ctrl+Z for undo (to implement)
-                } else {
-                    obj.scale.multiplyScalar(1 - scale); 
-                }
-                break;
-            case 'x': obj.scale.multiplyScalar(1 + scale); break;
-            
-            // Transform modes
-            case 'g': setTransformMode('translate'); break;
-            case 'r': if (!e.ctrlKey) setTransformMode('rotate'); break;
-            case 's': if (!e.ctrlKey) setTransformMode('scale'); break;
-            
-            // Animation
-            case ' ': togglePlayback(); break;
-            case 'k': addKeyframe(); break;
-            
-            // Duplicate
-            case 'd': 
-                if (e.ctrlKey) {
-                    e.preventDefault();
+        // Check for Ctrl/Cmd key combinations FIRST
+        const ctrlPressed = e.ctrlKey || e.metaKey;
+        
+        if (ctrlPressed) {
+            e.preventDefault(); // Prevent browser shortcuts
+            switch(e.key.toLowerCase()) {
+                case 'c': // Copy
+                    copySelected();
+                    break;
+                case 'v': // Paste
+                    pasteObject();
+                    break;
+                case 'x': // Cut
+                    cutSelected();
+                    break;
+                case 'd': // Duplicate
                     duplicateSelected();
+                    break;
+                case 'z': // Undo (placeholder)
+                    console.log('Undo - to be implemented');
+                    break;
+            }
+        } else {
+            // Original movement controls (keep these)
+            if (obj) {
+                switch(e.key.toLowerCase()) {
+                    // WASD Movement
+                    case 'w': obj.position.z -= move; break;
+                    case 's': obj.position.z += move; break;
+                    case 'a': obj.position.x -= move; break;
+                    case 'd': obj.position.x += move; break;
+                    
+                    // Arrow keys (alternative)
+                    case 'arrowup': obj.position.z -= move; break;
+                    case 'arrowdown': obj.position.z += move; break;
+                    case 'arrowleft': obj.position.x -= move; break;
+                    case 'arrowright': obj.position.x += move; break;
+                    
+                    // Vertical movement
+                    case 'q': obj.position.y -= move; break;
+                    case 'e': obj.position.y += move; break;
+                    case 'pageup': obj.position.y += move; break;
+                    case 'pagedown': obj.position.y -= move; break;
+                    
+                    // Rotation
+                    case 'r': obj.rotation.y += rotate; break;
+                    case 'f': obj.rotation.y -= rotate; break;
+                    
+                    // Scale
+                    case 'z': obj.scale.multiplyScalar(1 - scale); break;
+                    case 'x': obj.scale.multiplyScalar(1 + scale); break;
+                    
+                    // Delete
+                    case 'delete': 
+                    case 'backspace': 
+                        deleteSelected(); 
+                        break;
                 }
-                break;
+            }
             
-            // Delete
-            case 'delete': 
-            case 'backspace': 
-                deleteSelected(); 
-                break;
+            // Transform modes (work even without selection)
+            switch(e.key.toLowerCase()) {
+                case 'g': setTransformMode('translate'); break;
+                case 'r': if (!ctrlPressed) setTransformMode('rotate'); break;
+                case 's': if (!ctrlPressed) setTransformMode('scale'); break;
+                
+                // Animation
+                case ' ': togglePlayback(); break;
+                case 'k': addKeyframe(); break;
+            }
         }
         
         // Update visual
-        if (SNM.selectionBox) SNM.selectionBox.update();
+        if (obj && SNM.selectionBox) SNM.selectionBox.update();
         
         // Update coordinates display
         updateCoordinates();
@@ -648,6 +781,7 @@ function updateUI() {
     if (window.UI && window.UI.updateUI) {
         window.UI.updateUI();
     }
+    updateClipboardStatus();
 }
 
 function getSceneStats() {
@@ -679,6 +813,11 @@ window.Editor = {
     setTransformMode,
     deleteSelected,
     duplicateSelected,
+    
+    // Copy/Paste
+    copySelected,
+    pasteObject,
+    cutSelected,
     
     // Animation
     addKeyframe,
