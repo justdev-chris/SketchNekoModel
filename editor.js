@@ -120,6 +120,11 @@ function addKeyframe() {
 }
 
 function exportGLB() {
+    if (!SNM.scene) {
+        alert('Scene not ready yet!');
+        return;
+    }
+    
     const exporter = new THREE.GLTFExporter();
     
     exporter.parse(SNM.scene, (gltf) => {
