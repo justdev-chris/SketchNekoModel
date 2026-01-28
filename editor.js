@@ -1,10 +1,8 @@
-// editor.js - COMPLETE AND WORKING
+// editor.js - WITH REAL TRANSFORM GIZMO
 console.log('🐱 SNM Editor loading...');
 
-// Primitive creation functions
+// Primitive creation
 function addCube() {
-    console.log('Adding cube...');
-    
     const geometry = new THREE.BoxGeometry(1, 1, 1);
     const material = new THREE.MeshStandardMaterial({ 
         color: new THREE.Color(Math.random(), Math.random(), Math.random()),
@@ -12,7 +10,7 @@ function addCube() {
         roughness: 0.7
     });
     const cube = new THREE.Mesh(geometry, material);
-    cube.position.set((Math.random() - 0.5) * 5, 0.5, (Math.random() - 0.5) * 5);
+    cube.position.set(0, 0.5, 0);
     cube.name = `Cube_${SNM.objects.length + 1}`;
     cube.userData = { type: 'cube' };
     
@@ -24,8 +22,6 @@ function addCube() {
 }
 
 function addSphere() {
-    console.log('Adding sphere...');
-    
     const geometry = new THREE.SphereGeometry(0.5, 32, 32);
     const material = new THREE.MeshStandardMaterial({ 
         color: new THREE.Color(Math.random(), Math.random(), Math.random()),
@@ -33,7 +29,7 @@ function addSphere() {
         roughness: 0.2
     });
     const sphere = new THREE.Mesh(geometry, material);
-    sphere.position.set((Math.random() - 0.5) * 5, 0.5, (Math.random() - 0.5) * 5);
+    sphere.position.set(2, 0.5, 0);
     sphere.name = `Sphere_${SNM.objects.length + 1}`;
     sphere.userData = { type: 'sphere' };
     
@@ -45,8 +41,6 @@ function addSphere() {
 }
 
 function addCylinder() {
-    console.log('Adding cylinder...');
-    
     const geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 32);
     const material = new THREE.MeshStandardMaterial({ 
         color: new THREE.Color(Math.random(), Math.random(), Math.random()),
@@ -54,7 +48,7 @@ function addCylinder() {
         roughness: 0.5
     });
     const cylinder = new THREE.Mesh(geometry, material);
-    cylinder.position.set((Math.random() - 0.5) * 5, 0.5, (Math.random() - 0.5) * 5);
+    cylinder.position.set(-2, 0.5, 0);
     cylinder.name = `Cylinder_${SNM.objects.length + 1}`;
     cylinder.userData = { type: 'cylinder' };
     
@@ -65,7 +59,7 @@ function addCylinder() {
     return cylinder;
 }
 
-// Selection function (FIXED)
+// Selection with Transform Gizmo
 function selectObject(object) {
     console.log('Selecting:', object?.name || 'none');
     
@@ -78,31 +72,117 @@ function selectObject(object) {
     // Update selected object
     SNM.selectedObject = object;
     
-    // Create new selection box if object exists
     if (object) {
+        // Create selection box
         const box = new THREE.BoxHelper(object, 0x00ff00);
         box.name = 'selection_box';
         SNM.scene.add(box);
         SNM.selectionBox = box;
+        
+        // Attach transform gizmo to object
+        if (window.transformControls) {
+            window.transformControls.attach(object);
+        }
+    } else {
+        // Detach transform gizmo if no object
+        if (window.transformControls) {
+            window.transformControls.detach();
+        }
     }
     
     updateUI();
 }
 
+// Set Transform Mode (Move/Rotate/Scale)
+function setTransformMode(mode) {
+    if (!window.transformControls) return;
+    
+    window.transformControls.setMode(mode);
+    currentTransformMode = mode;
+    
+    // Update UI buttons
+    document.querySelectorAll('.transform-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.transform === mode);
+    });
+    
+    // Show visual feedback
+    const modeNames = { translate: 'Move', rotate: 'Rotate', scale: 'Scale' };
+    console.log(`Transform: ${modeNames[mode]} (${mode})`);
+}
+
+// Simple transform with arrow keys (alternative to gizmo)
+function setupArrowKeyControls() {
+    window.addEventListener('keydown', (e) => {
+        if (!SNM.selectedObject) return;
+        
+        const speed = e.shiftKey ? 0.5 : 0.1;
+        const obj = SNM.selectedObject;
+        
+        switch(e.key) {
+            case 'ArrowUp':
+                e.preventDefault();
+                obj.position.z -= speed;
+                break;
+            case 'ArrowDown':
+                e.preventDefault();
+                obj.position.z += speed;
+                break;
+            case 'ArrowLeft':
+                e.preventDefault();
+                obj.position.x -= speed;
+                break;
+            case 'ArrowRight':
+                e.preventDefault();
+                obj.position.x += speed;
+                break;
+            case 'PageUp':
+                e.preventDefault();
+                obj.position.y += speed;
+                break;
+            case 'PageDown':
+                e.preventDefault();
+                obj.position.y -= speed;
+                break;
+            case '[':
+                e.preventDefault();
+                obj.rotation.y += 0.1;
+                break;
+            case ']':
+                e.preventDefault();
+                obj.rotation.y -= 0.1;
+                break;
+            case '-':
+                e.preventDefault();
+                obj.scale.multiplyScalar(0.9);
+                break;
+            case '=':
+                e.preventDefault();
+                obj.scale.multiplyScalar(1.1);
+                break;
+        }
+        
+        // Update selection box
+        if (SNM.selectionBox) {
+            SNM.selectionBox.update();
+        }
+        
+        updateUI();
+    });
+}
+
 // Delete function
 function deleteSelected() {
-    if (!SNM.selectedObject) {
-        alert('No object selected!');
-        return;
-    }
-    
-    console.log('Deleting:', SNM.selectedObject.name);
+    if (!SNM.selectedObject) return;
     
     SNM.scene.remove(SNM.selectedObject);
     
     if (SNM.selectionBox) {
         SNM.scene.remove(SNM.selectionBox);
         SNM.selectionBox = null;
+    }
+    
+    if (window.transformControls) {
+        window.transformControls.detach();
     }
     
     const index = SNM.objects.indexOf(SNM.selectedObject);
@@ -120,8 +200,6 @@ function addKeyframe() {
         return;
     }
     
-    console.log('Adding keyframe at time:', SNM.currentTime);
-    
     const keyframe = {
         time: SNM.currentTime,
         position: SNM.selectedObject.position.clone(),
@@ -135,7 +213,6 @@ function addKeyframe() {
         SNM.animations.push(anim);
     }
     
-    // Remove existing keyframe at similar time (within 0.1s)
     anim.keyframes = anim.keyframes.filter(kf => Math.abs(kf.time - SNM.currentTime) > 0.1);
     anim.keyframes.push(keyframe);
     anim.keyframes.sort((a, b) => a.time - b.time);
@@ -155,18 +232,16 @@ function clearKeyframes() {
 
 // Export function
 function exportGLB() {
-    if (!SNM.scene) {
-        alert('Scene not ready!');
-        return;
-    }
+    if (!SNM.scene) return;
     
-    console.log('Exporting GLB...');
-    
-    // Remove selection box before export
-    const tempSelectionBox = SNM.selectionBox;
-    if (tempSelectionBox) {
-        SNM.scene.remove(tempSelectionBox);
-    }
+    // Remove helpers before export
+    const helpers = [];
+    SNM.scene.children.forEach(child => {
+        if (child.name.includes('selection_box') || child.name.includes('transform')) {
+            helpers.push(child);
+            SNM.scene.remove(child);
+        }
+    });
     
     const exporter = new THREE.GLTFExporter();
     
@@ -183,14 +258,11 @@ function exportGLB() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         
-        console.log('✅ Export complete!');
-        alert('Model exported as snm_model.glb');
+        alert('Model exported!');
     }, { binary: true });
     
-    // Restore selection box
-    if (tempSelectionBox) {
-        SNM.scene.add(tempSelectionBox);
-    }
+    // Restore helpers
+    helpers.forEach(helper => SNM.scene.add(helper));
 }
 
 // Playback control
@@ -199,19 +271,15 @@ function togglePlayback() {
     const playBtn = document.getElementById('play-btn');
     if (playBtn) {
         playBtn.textContent = SNM.isPlaying ? '⏸ Pause' : '▶ Play';
-        console.log('Playback:', SNM.isPlaying ? 'Playing' : 'Paused');
     }
 }
 
-// Transform tools
-function setTransformMode(mode) {
-    console.log('Transform mode:', mode);
-    // Update UI buttons
-    document.querySelectorAll('.transform-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.transform === mode);
-    });
-    // In a full implementation, this would switch transform gizmo
-    alert(`Transform mode set to: ${mode} (Gizmo not implemented yet)`);
+// Initialize controls
+function initControls() {
+    setupArrowKeyControls();
+    
+    // Default to move mode
+    setTimeout(() => setTransformMode('translate'), 100);
 }
 
 // Expose all functions
@@ -225,7 +293,8 @@ window.Editor = {
     clearKeyframes,
     exportGLB,
     togglePlayback,
-    setTransformMode
+    setTransformMode,
+    initControls
 };
 
 console.log('✅ SNM Editor loaded!');
