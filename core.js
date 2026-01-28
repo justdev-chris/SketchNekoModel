@@ -18,6 +18,7 @@ window.SNM = {
     scene, 
     objects, selectedObject, isPlaying, currentTime, animations, selectionBox,
     camera: null, renderer: null, controls: null, transformControls: null,
+    clock: clock,
     init: null, animate: null, updateAnimations: null, updateTimelineUI: null
 };
 
