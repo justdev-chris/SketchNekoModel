@@ -130,3 +130,63 @@ body {
 #time-slider {
     flex: 1;
 }
+
+/* Keyframe visualization */
+#keyframes-container {
+    height: 40px;
+    background: #333;
+    border-radius: 4px;
+    margin-top: 10px;
+    position: relative;
+}
+
+.keyframe {
+    position: absolute;
+    width: 12px;
+    height: 20px;
+    background: #ff9900;
+    border-radius: 3px;
+    top: 10px;
+    cursor: pointer;
+    border: 2px solid #ffcc00;
+}
+
+.keyframe:hover {
+    background: #ffcc00;
+}
+
+.keyframe.selected {
+    background: #00ff00;
+    border-color: #00ff00;
+}
+
+/* Transform buttons */
+#transform-buttons {
+    display: flex;
+    gap: 5px;
+    margin-top: 15px;
+}
+
+.transform-btn {
+    background: #444;
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    flex: 1;
+}
+
+.transform-btn.active {
+    background: #0066cc;
+}
+
+/* Stats display */
+#stats {
+    margin-top: 15px;
+    font-size: 12px;
+    color: #aaa;
+    padding: 10px;
+    background: #3a3a3a;
+    border-radius: 4px;
+}
