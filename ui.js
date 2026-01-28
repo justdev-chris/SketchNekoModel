@@ -1,4 +1,4 @@
-// ui.js - FIXED VERSION
+// ui.js - COMPLETE AND WORKING
 console.log('🐱 SNM UI loading...');
 
 // Update object list in hierarchy panel
@@ -12,14 +12,11 @@ function updateObjectList() {
         const item = document.createElement('div');
         item.className = 'object-item';
         
-        // Highlight if selected
         if (obj === SNM.selectedObject) {
             item.classList.add('selected');
         }
         
         item.textContent = obj.name;
-        
-        // Click to select
         item.onclick = () => {
             Editor.selectObject(obj);
         };
@@ -28,7 +25,7 @@ function updateObjectList() {
     });
 }
 
-// Update properties panel
+// Update properties panel (FIXED ROTATION)
 function updateProperties() {
     const props = document.getElementById('properties');
     if (!props) return;
@@ -59,9 +56,8 @@ function updateProperties() {
             const value = parseFloat(e.target.value) || 0;
             obj.position.setComponent(idx, value);
             
-            // Update selection box
-            if (currentSelectionBox) {
-                currentSelectionBox.update();
+            if (SNM.selectionBox) {
+                SNM.selectionBox.update();
             }
         };
         
@@ -70,7 +66,7 @@ function updateProperties() {
         props.appendChild(row);
     });
     
-    // Rotation controls
+    // Rotation controls - FIXED
     ['X', 'Y', 'Z'].forEach((axis, idx) => {
         const row = document.createElement('div');
         row.className = 'property-row';
@@ -81,15 +77,24 @@ function updateProperties() {
         const input = document.createElement('input');
         input.type = 'number';
         input.step = '1';
-        input.value = (obj.rotation.getComponent(idx) * (180 / Math.PI)).toFixed(1);
+        
+        // FIX: Get rotation correctly (Euler has x, y, z properties, not getComponent)
+        const rotationValues = [obj.rotation.x, obj.rotation.y, obj.rotation.z];
+        input.value = (rotationValues[idx] * (180 / Math.PI)).toFixed(1);
         
         input.onchange = (e) => {
             const value = parseFloat(e.target.value) || 0;
-            obj.rotation.setComponent(idx, value * (Math.PI / 180));
+            const radians = value * (Math.PI / 180);
             
-            // Update selection box
-            if (currentSelectionBox) {
-                currentSelectionBox.update();
+            // Set rotation based on axis
+            switch(axis) {
+                case 'X': obj.rotation.x = radians; break;
+                case 'Y': obj.rotation.y = radians; break;
+                case 'Z': obj.rotation.z = radians; break;
+            }
+            
+            if (SNM.selectionBox) {
+                SNM.selectionBox.update();
             }
         };
         
@@ -118,15 +123,75 @@ function updateProperties() {
     props.appendChild(colorRow);
 }
 
+// Update keyframe visualization
+function updateKeyframes() {
+    const container = document.getElementById('keyframes-container');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    if (!SNM.selectedObject) return;
+    
+    // Find animations for selected object
+    const anim = SNM.animations.find(a => a.object === SNM.selectedObject);
+    if (!anim || !anim.keyframes) return;
+    
+    // Draw each keyframe
+    anim.keyframes.forEach(kf => {
+        const keyframeEl = document.createElement('div');
+        keyframeEl.className = 'keyframe';
+        keyframeEl.style.left = `${(kf.time / 10) * 100}%`; // 10 second timeline
+        
+        // Highlight if at current time
+        if (Math.abs(kf.time - SNM.currentTime) < 0.1) {
+            keyframeEl.classList.add('selected');
+        }
+        
+        keyframeEl.title = `Time: ${kf.time.toFixed(1)}s`;
+        
+        keyframeEl.onclick = (e) => {
+            e.stopPropagation();
+            // Jump to this keyframe
+            SNM.currentTime = kf.time;
+            SNM.updateAnimations(kf.time);
+            updateUI();
+        };
+        
+        container.appendChild(keyframeEl);
+    });
+}
+
+// Update stats
+function updateStats() {
+    const objectCount = document.getElementById('object-count');
+    const keyframeCount = document.getElementById('keyframe-count');
+    const currentTime = document.getElementById('current-time');
+    
+    if (objectCount) objectCount.textContent = SNM.objects.length;
+    
+    let totalKeyframes = 0;
+    SNM.animations.forEach(anim => totalKeyframes += anim.keyframes.length);
+    if (keyframeCount) keyframeCount.textContent = totalKeyframes;
+    
+    if (currentTime) currentTime.textContent = SNM.currentTime.toFixed(1);
+}
+
 // Update all UI elements
 function updateUI() {
     updateObjectList();
     updateProperties();
+    updateKeyframes();
+    updateStats();
     
     // Update timeline display
     const timeDisplay = document.getElementById('time-display');
+    const timeSlider = document.getElementById('time-slider');
+    
     if (timeDisplay) {
         timeDisplay.textContent = SNM.currentTime.toFixed(1) + 's';
+    }
+    if (timeSlider) {
+        timeSlider.value = (SNM.currentTime / 10) * 100;
     }
 }
 
@@ -160,66 +225,54 @@ function setupEventListeners() {
         });
     });
     
-    // Animation controls
-    const playBtn = document.getElementById('play-btn');
-    if (playBtn) {
-        playBtn.addEventListener('click', Editor.togglePlayback);
-    }
+    // Transform buttons
+    document.querySelectorAll('.transform-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            Editor.setTransformMode(e.target.dataset.transform);
+        });
+    });
     
-    const keyframeBtn = document.getElementById('add-keyframe');
-    if (keyframeBtn) {
-        keyframeBtn.addEventListener('click', Editor.addKeyframe);
-    }
+    // Animation controls
+    document.getElementById('play-btn').addEventListener('click', Editor.togglePlayback);
+    document.getElementById('add-keyframe').addEventListener('click', Editor.addKeyframe);
+    document.getElementById('clear-keyframes').addEventListener('click', Editor.clearKeyframes);
     
     // Timeline slider
-    const timeSlider = document.getElementById('time-slider');
-    if (timeSlider) {
-        timeSlider.addEventListener('input', (e) => {
-            const value = parseFloat(e.target.value);
-            SNM.currentTime = (value / 100) * 10; // 10 seconds max
-            
-            // Update display
-            const display = document.getElementById('time-display');
-            if (display) {
-                display.textContent = SNM.currentTime.toFixed(1) + 's';
-            }
-            
-            // Update animations if not playing
-            if (!SNM.isPlaying) {
-                SNM.updateAnimations(SNM.currentTime);
-            }
-        });
-    }
+    document.getElementById('time-slider').addEventListener('input', (e) => {
+        const value = parseFloat(e.target.value);
+        SNM.currentTime = (value / 100) * 10;
+        
+        // Update display
+        document.getElementById('time-display').textContent = SNM.currentTime.toFixed(1) + 's';
+        
+        // Update animations if not playing
+        if (!SNM.isPlaying) {
+            SNM.updateAnimations(SNM.currentTime);
+            updateKeyframes(); // Update keyframe highlights
+        }
+    });
     
     // Viewport click for object selection
-    const viewport = document.getElementById('viewport');
-    if (viewport) {
-        viewport.addEventListener('click', (e) => {
-            // Only select if clicking directly on canvas
-            if (e.target !== viewport) return;
-            
-            // Calculate mouse position in normalized device coordinates
-            const rect = viewport.getBoundingClientRect();
-            const mouse = {
-                x: ((e.clientX - rect.left) / rect.width) * 2 - 1,
-                y: -((e.clientY - rect.top) / rect.height) * 2 + 1
-            };
-            
-            // Raycast to find clicked object
-            const raycaster = new THREE.Raycaster();
-            raycaster.setFromCamera(new THREE.Vector2(mouse.x, mouse.y), SNM.camera);
-            
-            const intersects = raycaster.intersectObjects(SNM.objects);
-            
-            if (intersects.length > 0) {
-                // Select the first intersected object
-                Editor.selectObject(intersects[0].object);
-            } else {
-                // Clicked empty space - deselect
-                Editor.selectObject(null);
-            }
-        });
-    }
+    document.getElementById('viewport').addEventListener('click', (e) => {
+        if (e.target !== document.getElementById('viewport')) return;
+        
+        const rect = e.target.getBoundingClientRect();
+        const mouse = {
+            x: ((e.clientX - rect.left) / rect.width) * 2 - 1,
+            y: -((e.clientY - rect.top) / rect.height) * 2 + 1
+        };
+        
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(new THREE.Vector2(mouse.x, mouse.y), SNM.camera);
+        
+        const intersects = raycaster.intersectObjects(SNM.objects);
+        
+        if (intersects.length > 0) {
+            Editor.selectObject(intersects[0].object);
+        } else {
+            Editor.selectObject(null);
+        }
+    });
     
     console.log('✅ Event listeners setup complete');
 }
