@@ -7,49 +7,138 @@
     <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/OBJExporter.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/dat.gui.module.min.js"></script>
+    <!-- Our Transform Gizmo -->
+    <script src="transforms/TransformControls.js"></script>
+    <script src="transforms/TransformGizmo.js"></script>
 </head>
 <body>
     <div id="app">
         <!-- Top Toolbar -->
         <div id="toolbar">
-            <button class="tool-btn" data-tool="add-cube">Cube</button>
-            <button class="tool-btn" data-tool="add-sphere">Sphere</button>
-            <button class="tool-btn" data-tool="add-cylinder">Cylinder</button>
-            <button class="tool-btn" data-tool="delete">Delete</button>
-            <button class="tool-btn" data-tool="export">Export GLB</button>
+            <!-- File -->
+            <div class="tool-group">
+                <button class="tool-btn" data-tool="new-scene">New</button>
+                <button class="tool-btn" data-tool="import">Import</button>
+                <div class="dropdown">
+                    <button class="tool-btn">Export ▼</button>
+                    <div class="dropdown-content">
+                        <a href="#" data-export="gltf">GLTF (.gltf)</a>
+                        <a href="#" data-export="glb">GLB (.glb)</a>
+                        <a href="#" data-export="obj">OBJ (.obj)</a>
+                        <a href="#" data-export="stl">STL (.stl)</a>
+                        <a href="#" data-export="json">JSON (.json)</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit -->
+            <div class="tool-group">
+                <button class="tool-btn" data-tool="undo">↶ Undo</button>
+                <button class="tool-btn" data-tool="redo">↷ Redo</button>
+                <button class="tool-btn" data-tool="duplicate">Duplicate</button>
+                <button class="tool-btn" data-tool="delete">Delete</button>
+            </div>
+
+            <!-- Create -->
+            <div class="tool-group">
+                <button class="tool-btn" data-tool="add-cube">Cube</button>
+                <button class="tool-btn" data-tool="add-sphere">Sphere</button>
+                <button class="tool-btn" data-tool="add-cylinder">Cylinder</button>
+                <button class="tool-btn" data-tool="add-cone">Cone</button>
+                <button class="tool-btn" data-tool="add-torus">Torus</button>
+                <button class="tool-btn" data-tool="add-plane">Plane</button>
+            </div>
+
+            <!-- Transform Mode -->
+            <div class="tool-group">
+                <button class="tool-btn mode-btn active" data-mode="translate" title="Move (G)">Move</button>
+                <button class="tool-btn mode-btn" data-mode="rotate" title="Rotate (R)">Rotate</button>
+                <button class="tool-btn mode-btn" data-mode="scale" title="Scale (S)">Scale</button>
+            </div>
+
+            <!-- Edit Tools -->
+            <div class="tool-group">
+                <button class="tool-btn" data-tool="extrude">Extrude</button>
+                <button class="tool-btn" data-tool="bevel">Bevel</button>
+                <button class="tool-btn" data-tool="subdivide">Subdivide</button>
+                <button class="tool-btn" data-tool="merge">Merge</button>
+            </div>
+
+            <!-- Animation -->
+            <div class="tool-group">
+                <button class="tool-btn" data-tool="add-keyframe">+ Keyframe</button>
+                <button class="tool-btn" id="play-btn">▶ Play</button>
+                <button class="tool-btn" data-tool="loop">🔁 Loop</button>
+            </div>
         </div>
 
         <div id="main">
             <!-- Left Sidebar - Hierarchy -->
             <div id="hierarchy-panel" class="panel">
-                <h3>Objects</h3>
+                <h3>🎯 Scene</h3>
                 <div id="object-list"></div>
+                <div id="layers" style="margin-top: 20px;">
+                    <h4>Layers</h4>
+                    <div id="layer-list"></div>
+                </div>
             </div>
 
             <!-- Center - 3D Viewport -->
             <div id="viewport-container">
                 <canvas id="viewport"></canvas>
+                <div id="viewport-overlay">
+                    <div id="coordinates">X: 0.00 Y: 0.00 Z: 0.00</div>
+                    <div id="transform-info">Move (G) | Rotate (R) | Scale (S)</div>
+                </div>
             </div>
 
             <!-- Right Sidebar - Properties -->
             <div id="properties-panel" class="panel">
-                <h3>Properties</h3>
+                <h3>🔧 Properties</h3>
                 <div id="properties"></div>
+                
+                <div id="material-editor" style="margin-top: 20px;">
+                    <h4>🎨 Material</h4>
+                    <div id="material-props"></div>
+                </div>
+                
+                <div id="neko-tools" style="margin-top: 20px;">
+                    <h4>🐱 Neko Tools</h4>
+                    <button class="neko-btn" data-tool="paw-cursor">Paw Cursor</button>
+                    <button class="neko-btn" data-tool="whisker-guide">Whisker Guide</button>
+                    <button class="neko-btn" data-tool="cat-model">Add Cat</button>
+                </div>
             </div>
         </div>
 
         <!-- Bottom - Animation Timeline -->
         <div id="timeline" class="panel">
-            <h3>Timeline</h3>
-            <div id="timeline-controls">
-                <button id="play">▶ Play</button>
-                <button id="add-keyframe">+ Keyframe</button>
-                <input type="range" id="time-slider" min="0" max="100" value="0">
-                <span id="time-display">0.0s</span>
+            <div id="timeline-header">
+                <h3>🎬 Timeline</h3>
+                <div id="time-controls">
+                    <button id="goto-start">⏮</button>
+                    <button id="prev-frame">⏪</button>
+                    <button id="play-pause">▶</button>
+                    <button id="next-frame">⏩</button>
+                    <button id="goto-end">⏭</button>
+                    <input type="range" id="time-slider" min="0" max="100" value="0">
+                    <span id="time-display">0.00 / 10.00s</span>
+                    <input type="number" id="fps" value="24" min="1" max="60" style="width: 50px;"> FPS
+                </div>
             </div>
-            <div id="keyframe-track"></div>
+            <div id="timeline-track">
+                <div id="keyframes-container"></div>
+                <div id="playhead"></div>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div id="statusbar">
+            <span id="status">Ready | Vertices: 0 | Faces: 0</span>
+            <span id="fps-counter">FPS: 60</span>
         </div>
     </div>
 
