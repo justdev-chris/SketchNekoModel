@@ -1,7 +1,7 @@
-// ui.js - COMPLETE AND WORKING
+// ui.js - WITH BETTER PROPERTIES UI
 console.log('🐱 SNM UI loading...');
 
-// Update object list in hierarchy panel
+// Update object list
 function updateObjectList() {
     const list = document.getElementById('object-list');
     if (!list) return;
@@ -17,15 +17,12 @@ function updateObjectList() {
         }
         
         item.textContent = obj.name;
-        item.onclick = () => {
-            Editor.selectObject(obj);
-        };
-        
+        item.onclick = () => Editor.selectObject(obj);
         list.appendChild(item);
     });
 }
 
-// Update properties panel (FIXED ROTATION)
+// Update properties with BETTER UI
 function updateProperties() {
     const props = document.getElementById('properties');
     if (!props) return;
@@ -33,95 +30,95 @@ function updateProperties() {
     props.innerHTML = '';
     
     if (!SNM.selectedObject) {
-        props.innerHTML = '<p style="color: #aaa; padding: 10px;">Select an object to edit properties</p>';
+        props.innerHTML = '<p style="color: #aaa; padding: 10px; text-align: center;">👈 Select an object</p>';
         return;
     }
     
     const obj = SNM.selectedObject;
     
-    // Position controls
-    ['X', 'Y', 'Z'].forEach((axis, idx) => {
-        const row = document.createElement('div');
-        row.className = 'property-row';
-        
-        const label = document.createElement('label');
-        label.textContent = `Position ${axis}:`;
-        
-        const input = document.createElement('input');
-        input.type = 'number';
-        input.step = '0.1';
-        input.value = obj.position.getComponent(idx).toFixed(2);
-        
-        input.onchange = (e) => {
-            const value = parseFloat(e.target.value) || 0;
-            obj.position.setComponent(idx, value);
-            
-            if (SNM.selectionBox) {
-                SNM.selectionBox.update();
-            }
-        };
-        
-        row.appendChild(label);
-        row.appendChild(input);
-        props.appendChild(row);
-    });
+    // Create a SIMPLE transform controller
+    const transformControl = document.createElement('div');
+    transformControl.className = 'transform-control';
+    transformControl.innerHTML = `
+        <div class="property-group">
+            <h4>Transform</h4>
+            <div class="transform-buttons">
+                <button class="transform-btn active" onclick="Editor.setTransformMode('translate')">Move</button>
+                <button class="transform-btn" onclick="Editor.setTransformMode('rotate')">Rotate</button>
+                <button class="transform-btn" onclick="Editor.setTransformMode('scale')">Scale</button>
+            </div>
+            <p style="color: #888; font-size: 12px; margin-top: 10px;">
+                Use <b>arrow keys</b> to move<br>
+                Drag <b>gizmo handles</b> in viewport
+            </p>
+        </div>
+    `;
+    props.appendChild(transformControl);
     
-    // Rotation controls - FIXED
-    ['X', 'Y', 'Z'].forEach((axis, idx) => {
-        const row = document.createElement('div');
-        row.className = 'property-row';
-        
-        const label = document.createElement('label');
-        label.textContent = `Rotation ${axis}:`;
-        
-        const input = document.createElement('input');
-        input.type = 'number';
-        input.step = '1';
-        
-        // FIX: Get rotation correctly (Euler has x, y, z properties, not getComponent)
-        const rotationValues = [obj.rotation.x, obj.rotation.y, obj.rotation.z];
-        input.value = (rotationValues[idx] * (180 / Math.PI)).toFixed(1);
-        
-        input.onchange = (e) => {
-            const value = parseFloat(e.target.value) || 0;
-            const radians = value * (Math.PI / 180);
-            
-            // Set rotation based on axis
-            switch(axis) {
-                case 'X': obj.rotation.x = radians; break;
-                case 'Y': obj.rotation.y = radians; break;
-                case 'Z': obj.rotation.z = radians; break;
-            }
-            
-            if (SNM.selectionBox) {
-                SNM.selectionBox.update();
-            }
-        };
-        
-        row.appendChild(label);
-        row.appendChild(input);
-        props.appendChild(row);
-    });
+    // Simple position display (read-only)
+    const posDisplay = document.createElement('div');
+    posDisplay.className = 'property-group';
+    posDisplay.innerHTML = `
+        <h4>Position</h4>
+        <div class="position-display">
+            <div>X: ${obj.position.x.toFixed(2)}</div>
+            <div>Y: ${obj.position.y.toFixed(2)}</div>
+            <div>Z: ${obj.position.z.toFixed(2)}</div>
+        </div>
+    `;
+    props.appendChild(posDisplay);
+    
+    // Simple scale display with +/- buttons
+    const scaleControl = document.createElement('div');
+    scaleControl.className = 'property-group';
+    scaleControl.innerHTML = `
+        <h4>Scale</h4>
+        <div class="scale-control">
+            <button onclick="scaleObject(-0.1)">-</button>
+            <span>${obj.scale.x.toFixed(2)}</span>
+            <button onclick="scaleObject(0.1)">+</button>
+        </div>
+        <p style="color: #888; font-size: 12px;">
+            Uniform scaling
+        </p>
+    `;
+    props.appendChild(scaleControl);
     
     // Color picker
-    const colorRow = document.createElement('div');
-    colorRow.className = 'property-row';
+    const colorControl = document.createElement('div');
+    colorControl.className = 'property-group';
+    colorControl.innerHTML = `
+        <h4>Color</h4>
+        <input type="color" id="color-picker" value="#${obj.material.color.getHexString()}" 
+               style="width: 100%; height: 40px; border: none; cursor: pointer;">
+    `;
+    props.appendChild(colorControl);
     
-    const colorLabel = document.createElement('label');
-    colorLabel.textContent = 'Color:';
-    
-    const colorInput = document.createElement('input');
-    colorInput.type = 'color';
-    colorInput.value = '#' + obj.material.color.getHexString();
-    
-    colorInput.onchange = (e) => {
-        obj.material.color.set(e.target.value);
-    };
-    
-    colorRow.appendChild(colorLabel);
-    colorRow.appendChild(colorInput);
-    props.appendChild(colorRow);
+    // Setup color picker
+    setTimeout(() => {
+        const colorPicker = document.getElementById('color-picker');
+        if (colorPicker) {
+            colorPicker.oninput = (e) => {
+                obj.material.color.set(e.target.value);
+            };
+        }
+    }, 10);
 }
+
+// Scale helper function
+window.scaleObject = function(amount) {
+    if (!SNM.selectedObject) return;
+    
+    const obj = SNM.selectedObject;
+    const scaleFactor = 1 + amount;
+    obj.scale.multiplyScalar(scaleFactor);
+    
+    if (SNM.selectionBox) {
+        SNM.selectionBox.update();
+    }
+    
+    updateUI();
+};
 
 // Update keyframe visualization
 function updateKeyframes() {
@@ -132,17 +129,14 @@ function updateKeyframes() {
     
     if (!SNM.selectedObject) return;
     
-    // Find animations for selected object
     const anim = SNM.animations.find(a => a.object === SNM.selectedObject);
     if (!anim || !anim.keyframes) return;
     
-    // Draw each keyframe
     anim.keyframes.forEach(kf => {
         const keyframeEl = document.createElement('div');
         keyframeEl.className = 'keyframe';
-        keyframeEl.style.left = `${(kf.time / 10) * 100}%`; // 10 second timeline
+        keyframeEl.style.left = `${(kf.time / 10) * 100}%`;
         
-        // Highlight if at current time
         if (Math.abs(kf.time - SNM.currentTime) < 0.1) {
             keyframeEl.classList.add('selected');
         }
@@ -151,7 +145,6 @@ function updateKeyframes() {
         
         keyframeEl.onclick = (e) => {
             e.stopPropagation();
-            // Jump to this keyframe
             SNM.currentTime = kf.time;
             SNM.updateAnimations(kf.time);
             updateUI();
@@ -183,96 +176,80 @@ function updateUI() {
     updateKeyframes();
     updateStats();
     
-    // Update timeline display
     const timeDisplay = document.getElementById('time-display');
     const timeSlider = document.getElementById('time-slider');
     
-    if (timeDisplay) {
-        timeDisplay.textContent = SNM.currentTime.toFixed(1) + 's';
-    }
-    if (timeSlider) {
-        timeSlider.value = (SNM.currentTime / 10) * 100;
-    }
+    if (timeDisplay) timeDisplay.textContent = SNM.currentTime.toFixed(1) + 's';
+    if (timeSlider) timeSlider.value = (SNM.currentTime / 10) * 100;
 }
 
-// Setup all event listeners
+// Setup event listeners
 function setupEventListeners() {
     console.log('Setting up event listeners...');
     
     // Toolbar buttons
-    document.querySelectorAll('.tool-btn').forEach(btn => {
+    document.querySelectorAll('[data-tool]').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const tool = e.target.getAttribute('data-tool');
-            console.log('Tool clicked:', tool);
+            const tool = e.target.dataset.tool;
             
             switch(tool) {
-                case 'add-cube':
-                    Editor.addCube();
-                    break;
-                case 'add-sphere':
-                    Editor.addSphere();
-                    break;
-                case 'add-cylinder':
-                    Editor.addCylinder();
-                    break;
-                case 'delete':
-                    Editor.deleteSelected();
-                    break;
-                case 'export':
-                    Editor.exportGLB();
-                    break;
+                case 'add-cube': Editor.addCube(); break;
+                case 'add-sphere': Editor.addSphere(); break;
+                case 'add-cylinder': Editor.addCylinder(); break;
+                case 'delete': Editor.deleteSelected(); break;
+                case 'export': Editor.exportGLB(); break;
             }
         });
     });
     
-    // Transform buttons
-    document.querySelectorAll('.transform-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            Editor.setTransformMode(e.target.dataset.transform);
-        });
-    });
-    
     // Animation controls
-    document.getElementById('play-btn').addEventListener('click', Editor.togglePlayback);
-    document.getElementById('add-keyframe').addEventListener('click', Editor.addKeyframe);
-    document.getElementById('clear-keyframes').addEventListener('click', Editor.clearKeyframes);
+    const playBtn = document.getElementById('play-btn');
+    if (playBtn) playBtn.addEventListener('click', Editor.togglePlayback);
+    
+    const keyframeBtn = document.getElementById('add-keyframe');
+    if (keyframeBtn) keyframeBtn.addEventListener('click', Editor.addKeyframe);
+    
+    const clearBtn = document.getElementById('clear-keyframes');
+    if (clearBtn) clearBtn.addEventListener('click', Editor.clearKeyframes);
     
     // Timeline slider
-    document.getElementById('time-slider').addEventListener('input', (e) => {
-        const value = parseFloat(e.target.value);
-        SNM.currentTime = (value / 100) * 10;
-        
-        // Update display
-        document.getElementById('time-display').textContent = SNM.currentTime.toFixed(1) + 's';
-        
-        // Update animations if not playing
-        if (!SNM.isPlaying) {
-            SNM.updateAnimations(SNM.currentTime);
-            updateKeyframes(); // Update keyframe highlights
-        }
-    });
+    const timeSlider = document.getElementById('time-slider');
+    if (timeSlider) {
+        timeSlider.addEventListener('input', (e) => {
+            SNM.currentTime = (e.target.value / 100) * 10;
+            document.getElementById('time-display').textContent = SNM.currentTime.toFixed(1) + 's';
+            
+            if (!SNM.isPlaying) {
+                SNM.updateAnimations(SNM.currentTime);
+                updateKeyframes();
+            }
+        });
+    }
     
     // Viewport click for object selection
-    document.getElementById('viewport').addEventListener('click', (e) => {
-        if (e.target !== document.getElementById('viewport')) return;
-        
-        const rect = e.target.getBoundingClientRect();
-        const mouse = {
-            x: ((e.clientX - rect.left) / rect.width) * 2 - 1,
-            y: -((e.clientY - rect.top) / rect.height) * 2 + 1
-        };
-        
-        const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(new THREE.Vector2(mouse.x, mouse.y), SNM.camera);
-        
-        const intersects = raycaster.intersectObjects(SNM.objects);
-        
-        if (intersects.length > 0) {
-            Editor.selectObject(intersects[0].object);
-        } else {
-            Editor.selectObject(null);
-        }
-    });
+    const viewport = document.getElementById('viewport');
+    if (viewport) {
+        viewport.addEventListener('click', (e) => {
+            if (e.target !== viewport) return;
+            
+            const rect = viewport.getBoundingClientRect();
+            const mouse = {
+                x: ((e.clientX - rect.left) / rect.width) * 2 - 1,
+                y: -((e.clientY - rect.top) / rect.height) * 2 + 1
+            };
+            
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(new THREE.Vector2(mouse.x, mouse.y), SNM.camera);
+            
+            const intersects = raycaster.intersectObjects(SNM.objects);
+            
+            if (intersects.length > 0) {
+                Editor.selectObject(intersects[0].object);
+            } else {
+                Editor.selectObject(null);
+            }
+        });
+    }
     
     console.log('✅ Event listeners setup complete');
 }
@@ -288,10 +265,23 @@ window.addEventListener('load', function() {
     setupEventListeners();
     updateUI();
     
-    // Add a default cube to start with
+    // Initialize controls
+    Editor.initControls();
+    
+    // Add a default cube
     setTimeout(() => {
         Editor.addCube();
         console.log('✅ SNM Editor ready!');
+        
+        // Show help message
+        setTimeout(() => {
+            alert(`🎮 SNM Controls:
+• Click objects to select
+• Drag GIZMO arrows to move
+• Use arrow keys for fine movement
+• Press G/R/S for Move/Rotate/Scale
+• Space to play/pause animation`);
+        }, 500);
     }, 100);
 });
 
