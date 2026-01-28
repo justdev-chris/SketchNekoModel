@@ -145,7 +145,7 @@ function updateProperties() {
         row.style.alignItems = 'center';
         row.style.marginBottom = '8px';
         
-        // FIXED: Use direct properties instead of getComponent()
+        // Use direct properties instead of getComponent()
         const posArray = [obj.position.x, obj.position.y, obj.position.z];
         
         row.innerHTML = `
@@ -183,7 +183,7 @@ function updateProperties() {
         row.style.alignItems = 'center';
         row.style.marginBottom = '8px';
         
-        // FIXED: Use direct rotation properties
+        // Use direct rotation properties
         const rotationValues = [obj.rotation.x, obj.rotation.y, obj.rotation.z];
         const degrees = rotationValues[idx] * (180 / Math.PI);
         
@@ -200,7 +200,7 @@ function updateProperties() {
             const degrees = parseFloat(e.target.value) || 0;
             const radians = degrees * (Math.PI / 180);
             
-            // FIXED: Set rotation values directly
+            // Set rotation values directly
             if (idx === 0) obj.rotation.x = radians;
             else if (idx === 1) obj.rotation.y = radians;
             else if (idx === 2) obj.rotation.z = radians;
@@ -226,7 +226,7 @@ function updateProperties() {
         row.style.alignItems = 'center';
         row.style.marginBottom = '8px';
         
-        // FIXED: Use direct scale properties
+        // Use direct scale properties
         const scaleArray = [obj.scale.x, obj.scale.y, obj.scale.z];
         
         row.innerHTML = `
@@ -251,20 +251,26 @@ function updateProperties() {
     });
     props.appendChild(scaleGroup);
     
-    // COLOR PICKER - THIS IS WHAT YOU NEED
+    // COLOR PICKER
     const colorGroup = document.createElement('div');
     colorGroup.style.background = '#2a2a2a';
     colorGroup.style.padding = '15px';
     colorGroup.style.borderRadius = '6px';
     colorGroup.style.marginBottom = '15px';
+    
+    // Get color in hex format
+    const colorHex = '#' + obj.material.color.getHexString();
+    
     colorGroup.innerHTML = `
         <div style="color: #aaa; font-size: 12px; margin-bottom: 10px;">Material</div>
-        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+        <div style="display: flex; align-items: center; margin-bottom: 15px;">
             <div style="width: 60px; color: #aaa;">Color:</div>
             <input type="color" 
                    id="color-picker"
-                   value="#${obj.material.color.getHexString()}"
-                   style="flex: 1; height: 40px; border: none; cursor: pointer; background: transparent;">
+                   value="${colorHex}"
+                   style="width: 60px; height: 40px; border: 2px solid #555; cursor: pointer; border-radius: 4px;"
+                   onchange="SNM.selectedObject.material.color.set(this.value); SNM.selectedObject.material.needsUpdate = true;">
+            <div style="margin-left: 10px; color: white;">${colorHex}</div>
         </div>
         <div style="display: flex; align-items: center; margin-bottom: 10px;">
             <div style="width: 60px; color: #aaa;">Metal:</div>
@@ -286,16 +292,6 @@ function updateProperties() {
         </div>
     `;
     props.appendChild(colorGroup);
-    
-    // Color picker event - THIS CHANGES THE COLOR
-    const colorPicker = document.getElementById('color-picker');
-    if (colorPicker) {
-        colorPicker.onchange = (e) => {
-            console.log('Changing color to:', e.target.value);
-            obj.material.color.set(e.target.value);
-            obj.material.needsUpdate = true;
-        };
-    }
     
     // Animation info if exists
     const anim = SNM.animations.find(a => a.object === SNM.selectedObject);
@@ -494,6 +490,14 @@ function setupEventListeners() {
                     }
                     break;
             }
+        });
+    });
+    
+    // Transform mode buttons
+    document.querySelectorAll('[data-mode]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const mode = e.target.dataset.mode;
+            Editor.setTransformMode(mode);
         });
     });
     
