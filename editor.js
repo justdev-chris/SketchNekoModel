@@ -1,7 +1,13 @@
-// editor.js - WITH TRANSFORM GIZMO INTEGRATION
+// editor.js - COMPLETE WITH TRANSFORM GIZMO
 console.log('SNM Editor loading...');
 
 function addCube() {
+    if (!SNM.scene) {
+        console.error('Scene not ready');
+        setTimeout(addCube, 100);
+        return;
+    }
+    
     const geometry = new THREE.BoxGeometry(1, 1, 1);
     const material = new THREE.MeshStandardMaterial({ 
         color: new THREE.Color(Math.random(), Math.random(), Math.random()),
@@ -20,6 +26,11 @@ function addCube() {
 }
 
 function addSphere() {
+    if (!SNM.scene) {
+        setTimeout(addSphere, 100);
+        return;
+    }
+    
     const geometry = new THREE.SphereGeometry(0.5, 32, 32);
     const material = new THREE.MeshStandardMaterial({ 
         color: new THREE.Color(Math.random(), Math.random(), Math.random()),
@@ -38,6 +49,11 @@ function addSphere() {
 }
 
 function addCylinder() {
+    if (!SNM.scene) {
+        setTimeout(addCylinder, 100);
+        return;
+    }
+    
     const geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 32);
     const material = new THREE.MeshStandardMaterial({ 
         color: new THREE.Color(Math.random(), Math.random(), Math.random()),
@@ -56,7 +72,7 @@ function addCylinder() {
 }
 
 function selectObject(object) {
-    // Remove old selection box
+    // Remove old selection
     if (SNM.selectionBox) {
         SNM.scene.remove(SNM.selectionBox);
         SNM.selectionBox = null;
@@ -71,12 +87,11 @@ function selectObject(object) {
         SNM.scene.add(box);
         SNM.selectionBox = box;
         
-        // ATTACH TRANSFORM CONTROLS (GIZMO)
+        // Attach transform controls (GIZMO)
         if (SNM.transformControls) {
             SNM.transformControls.attach(object);
         }
     } else if (SNM.transformControls) {
-        // Detach gizmo if no object selected
         SNM.transformControls.detach();
     }
     
@@ -95,7 +110,7 @@ function setTransformMode(mode) {
             }
         });
         
-        // Update gizmo info
+        // Update info text
         const info = document.getElementById('gizmo-info');
         if (info) {
             if (mode === 'translate') {
@@ -124,12 +139,9 @@ function deleteSelected() {
     }
     
     const index = SNM.objects.indexOf(SNM.selectedObject);
-    if (index > -1) {
-        SNM.objects.splice(index, 1);
-    }
+    if (index > -1) SNM.objects.splice(index, 1);
     
     SNM.animations = SNM.animations.filter(anim => anim.object !== SNM.selectedObject);
-    
     SNM.selectedObject = null;
     updateUI();
 }
@@ -144,29 +156,53 @@ function addKeyframe() {
         time: SNM.currentTime,
         position: SNM.selectedObject.position.clone(),
         rotation: SNM.selectedObject.rotation.clone(),
-        scale: SNM.selectedObject.scale.clone()
+        scale: SNM.selectedObject.scale.clone(),
+        name: `Keyframe_${SNM.currentTime.toFixed(1)}s`
     };
     
+    // Find or create animation
     let anim = SNM.animations.find(a => a.object === SNM.selectedObject);
     if (!anim) {
-        anim = { object: SNM.selectedObject, keyframes: [] };
+        anim = { 
+            object: SNM.selectedObject, 
+            keyframes: [],
+            name: `${SNM.selectedObject.name}_Animation`
+        };
         SNM.animations.push(anim);
     }
     
+    // Remove existing keyframe at this time
+    anim.keyframes = anim.keyframes.filter(kf => Math.abs(kf.time - SNM.currentTime) > 0.1);
     anim.keyframes.push(keyframe);
     anim.keyframes.sort((a, b) => a.time - b.time);
     
     updateUI();
+    if (window.UI && window.UI.updateKeyframes) {
+        window.UI.updateKeyframes();
+    }
+}
+
+function clearKeyframes() {
+    if (!SNM.selectedObject) {
+        alert('Select an object first!');
+        return;
+    }
+    
+    SNM.animations = SNM.animations.filter(anim => anim.object !== SNM.selectedObject);
+    updateUI();
+    if (window.UI && window.UI.updateKeyframes) {
+        window.UI.updateKeyframes();
+    }
 }
 
 function exportGLB() {
     if (!SNM.scene) return;
     
-    // Remove helpers before export
-    const tempHelpers = [];
+    // Remove helpers
+    const helpers = [];
     SNM.scene.children.forEach(child => {
         if (child.name === 'selection_box' || child.type === 'TransformControls') {
-            tempHelpers.push(child);
+            helpers.push(child);
             SNM.scene.remove(child);
         }
     });
@@ -186,88 +222,55 @@ function exportGLB() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         
-        alert('Model exported as snm_model.glb');
+        alert('Model exported!');
     }, { binary: true });
     
     // Restore helpers
-    tempHelpers.forEach(helper => SNM.scene.add(helper));
+    helpers.forEach(helper => SNM.scene.add(helper));
 }
 
 function togglePlayback() {
     SNM.isPlaying = !SNM.isPlaying;
-    const playBtn = document.getElementById('play-btn');
-    if (playBtn) {
-        playBtn.textContent = SNM.isPlaying ? '⏸ Pause' : '▶ Play';
+    const btn = document.getElementById('play-btn') || document.getElementById('play-pause');
+    if (btn) {
+        btn.textContent = SNM.isPlaying ? '⏸ Pause' : '▶ Play';
     }
 }
 
-// Arrow key controls for precise movement
+// Keyboard shortcuts
 function setupKeyboardControls() {
     window.addEventListener('keydown', (e) => {
-        if (!SNM.selectedObject) return;
+        if (!SNM.selectedObject || e.target.tagName === 'INPUT') return;
         
         const obj = SNM.selectedObject;
-        const moveSpeed = e.shiftKey ? 0.5 : 0.1;
-        const rotateSpeed = 0.1;
-        const scaleSpeed = 0.1;
+        const move = e.shiftKey ? 0.5 : 0.1;
         
-        // Movement
-        if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            obj.position.z -= moveSpeed;
-        } else if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            obj.position.z += moveSpeed;
-        } else if (e.key === 'ArrowLeft') {
-            e.preventDefault();
-            obj.position.x -= moveSpeed;
-        } else if (e.key === 'ArrowRight') {
-            e.preventDefault();
-            obj.position.x += moveSpeed;
-        } else if (e.key === 'PageUp') {
-            e.preventDefault();
-            obj.position.y += moveSpeed;
-        } else if (e.key === 'PageDown') {
-            e.preventDefault();
-            obj.position.y -= moveSpeed;
+        switch(e.key.toLowerCase()) {
+            case 'arrowup': e.preventDefault(); obj.position.z -= move; break;
+            case 'arrowdown': e.preventDefault(); obj.position.z += move; break;
+            case 'arrowleft': e.preventDefault(); obj.position.x -= move; break;
+            case 'arrowright': e.preventDefault(); obj.position.x += move; break;
+            case 'pageup': e.preventDefault(); obj.position.y += move; break;
+            case 'pagedown': e.preventDefault(); obj.position.y -= move; break;
+            case 'q': e.preventDefault(); obj.rotation.y -= 0.1; break;
+            case 'e': e.preventDefault(); obj.rotation.y += 0.1; break;
+            case 'z': e.preventDefault(); obj.scale.multiplyScalar(0.9); break;
+            case 'x': e.preventDefault(); obj.scale.multiplyScalar(1.1); break;
+            case 'g': e.preventDefault(); setTransformMode('translate'); break;
+            case 'r': e.preventDefault(); setTransformMode('rotate'); break;
+            case 's': e.preventDefault(); setTransformMode('scale'); break;
+            case ' ': e.preventDefault(); togglePlayback(); break;
         }
         
-        // Rotation
-        else if (e.key === 'q') {
-            e.preventDefault();
-            obj.rotation.y -= rotateSpeed;
-        } else if (e.key === 'e') {
-            e.preventDefault();
-            obj.rotation.y += rotateSpeed;
-        }
-        
-        // Scale
-        else if (e.key === 'z') {
-            e.preventDefault();
-            obj.scale.multiplyScalar(1 - scaleSpeed);
-        } else if (e.key === 'x') {
-            e.preventDefault();
-            obj.scale.multiplyScalar(1 + scaleSpeed);
-        }
-        
-        // Update selection box
-        if (SNM.selectionBox) {
-            SNM.selectionBox.update();
-        }
-        
+        if (SNM.selectionBox) SNM.selectionBox.update();
         updateUI();
     });
 }
 
 window.Editor = {
-    addCube,
-    addSphere,
-    addCylinder,
-    selectObject,
-    deleteSelected,
-    addKeyframe,
-    exportGLB,
-    togglePlayback,
-    setTransformMode,
-    setupKeyboardControls
+    addCube, addSphere, addCylinder,
+    selectObject, deleteSelected,
+    addKeyframe, clearKeyframes,
+    exportGLB, togglePlayback,
+    setTransformMode, setupKeyboardControls
 };
