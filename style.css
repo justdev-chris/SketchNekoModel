@@ -1,0 +1,167 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #1e1e1e;
+    color: #fff;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* Top Toolbar */
+#toolbar {
+    background: #252525;
+    padding: 10px;
+    border-bottom: 2px solid #333;
+    display: flex;
+    gap: 10px;
+}
+
+.tool-btn {
+    background: #444;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.tool-btn:hover {
+    background: #555;
+}
+
+.tool-btn:active {
+    background: #666;
+}
+
+/* Main Content Area */
+#main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Panels (Sidebars) */
+.panel {
+    background: #2d2d2d;
+    padding: 15px;
+    overflow-y: auto;
+    min-width: 250px;
+    border-left: 1px solid #444;
+    border-right: 1px solid #444;
+}
+
+#hierarchy-panel {
+    border-right: 1px solid #444;
+}
+
+#properties-panel {
+    border-left: 1px solid #444;
+}
+
+/* Viewport */
+#viewport-container {
+    flex: 1;
+    position: relative;
+}
+
+#viewport {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Timeline */
+#timeline {
+    background: #252525;
+    padding: 10px;
+    border-top: 2px solid #333;
+    height: 120px;
+}
+
+#timeline-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+#time-slider {
+    flex: 1;
+}
+
+/* Object List */
+#object-list {
+    margin-top: 10px;
+}
+
+.object-item {
+    padding: 8px;
+    background: #3a3a3a;
+    margin: 4px 0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.object-item:hover {
+    background: #4a4a4a;
+}
+
+.object-item.selected {
+    background: #0066cc;
+}
+
+/* Property Controls */
+.property-group {
+    margin: 15px 0;
+}
+
+.property-row {
+    display: flex;
+    align-items: center;
+    margin: 8px 0;
+}
+
+.property-row label {
+    width: 80px;
+    font-size: 14px;
+}
+
+.property-row input {
+    flex: 1;
+    padding: 6px;
+    background: #3a3a3a;
+    border: 1px solid #555;
+    color: white;
+    border-radius: 4px;
+}
+
+/* Keyframe Track */
+#keyframe-track {
+    background: #333;
+    height: 40px;
+    border-radius: 4px;
+    position: relative;
+}
+
+.keyframe {
+    position: absolute;
+    width: 10px;
+    height: 20px;
+    background: #ff9900;
+    border-radius: 2px;
+    top: 10px;
+    cursor: pointer;
+}
