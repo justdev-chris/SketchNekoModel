@@ -1,192 +1,97 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+/* Add to your existing style.css: */
 
-body {
-    font-family: sans-serif;
-    background: #1a1a1a;
-    color: white;
-    height: 100vh;
-    overflow: hidden;
-}
-
-#app {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-}
-
-#toolbar {
-    background: #252525;
-    padding: 10px;
-    display: flex;
-    gap: 10px;
-    border-bottom: 2px solid #333;
-}
-
-.tool-btn {
-    background: #444;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.tool-btn:hover {
-    background: #555;
-}
-
-#main {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-}
-
-.panel {
-    background: #2d2d2d;
-    padding: 15px;
-    overflow-y: auto;
-    min-width: 250px;
-    border: 1px solid #444;
-}
-
-#hierarchy-panel {
-    border-right: 2px solid #444;
-}
-
-#properties-panel {
-    border-left: 2px solid #444;
-}
-
-#viewport-container {
-    flex: 1;
-    background: #1a1a1a;
-}
-
-#viewport {
-    width: 100%;
-    height: 100%;
-    display: block;
-}
-
-#object-list {
-    margin-top: 10px;
-}
-
-.object-item {
-    padding: 8px;
-    background: #3a3a3a;
-    margin: 4px 0;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.object-item:hover {
-    background: #4a4a4a;
-}
-
-.object-item.selected {
-    background: #0066cc;
-}
-
-#properties {
-    margin-top: 10px;
-}
-
-.property-row {
-    margin: 10px 0;
-}
-
-.property-row label {
-    display: block;
-    margin-bottom: 5px;
-    color: #aaa;
-}
-
-.property-row input {
-    width: 100%;
-    padding: 8px;
-    background: #3a3a3a;
-    border: 1px solid #555;
-    color: white;
-    border-radius: 4px;
-}
-
-#timeline {
-    border-top: 2px solid #444;
-    height: 120px;
-}
-
-#timeline-controls {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-top: 10px;
-}
-
-#time-slider {
-    flex: 1;
-}
-
-/* Keyframe visualization */
-#keyframes-container {
-    height: 40px;
-    background: #333;
-    border-radius: 4px;
-    margin-top: 10px;
-    position: relative;
-}
-
-.keyframe {
-    position: absolute;
-    width: 12px;
-    height: 20px;
-    background: #ff9900;
-    border-radius: 3px;
-    top: 10px;
-    cursor: pointer;
-    border: 2px solid #ffcc00;
-}
-
-.keyframe:hover {
-    background: #ffcc00;
-}
-
-.keyframe.selected {
-    background: #00ff00;
-    border-color: #00ff00;
-}
-
-/* Transform buttons */
-#transform-buttons {
+/* Transform Controls */
+.transform-buttons {
     display: flex;
     gap: 5px;
-    margin-top: 15px;
+    margin: 10px 0;
 }
 
 .transform-btn {
     background: #444;
     color: white;
     border: none;
-    padding: 8px;
+    padding: 10px;
     border-radius: 4px;
     cursor: pointer;
     flex: 1;
+    transition: background 0.2s;
+}
+
+.transform-btn:hover {
+    background: #555;
 }
 
 .transform-btn.active {
     background: #0066cc;
+    font-weight: bold;
 }
 
-/* Stats display */
-#stats {
-    margin-top: 15px;
-    font-size: 12px;
-    color: #aaa;
-    padding: 10px;
+/* Position Display */
+.position-display {
     background: #3a3a3a;
+    padding: 10px;
     border-radius: 4px;
+    margin: 10px 0;
+    font-family: monospace;
 }
+
+.position-display div {
+    padding: 5px 0;
+    border-bottom: 1px solid #444;
+}
+
+.position-display div:last-child {
+    border-bottom: none;
+}
+
+/* Scale Control */
+.scale-control {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin: 15px 0;
+}
+
+.scale-control button {
+    background: #444;
+    color: white;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.scale-control button:hover {
+    background: #555;
+}
+
+.scale-control span {
+    font-size: 24px;
+    font-weight: bold;
+    min-width: 60px;
+    text-align: center;
+}
+
+/* Property Groups */
+.property-group {
+    background: #2d2d2d;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.property-group h4 {
+    margin-bottom: 10px;
+    color: #fff;
+    border-bottom: 1px solid #444;
+    padding-bottom: 5px;
+}
+
+/* Gizmo colors (matches Three.js) */
+.transform-gizmo .axis-x { color: #ff3333; }
+.transform-gizmo .axis-y { color: #33ff33; }
+.transform-gizmo .axis-z { color: #3366ff; }
