@@ -4,9 +4,11 @@
     <title>Sketch Neko Model</title>
     <meta charset="utf-8">
     <link rel="stylesheet" href="style.css">
+    <!-- THREE.JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- TRANSFORM CONTROLS (GIZMO) -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
 </head>
 <body>
@@ -17,6 +19,12 @@
             <button class="tool-btn" data-tool="add-cylinder">Cylinder</button>
             <button class="tool-btn" data-tool="delete">Delete</button>
             <button class="tool-btn" data-tool="export">Export</button>
+            
+            <div class="transform-mode">
+                <button class="mode-btn active" data-mode="translate">Move</button>
+                <button class="mode-btn" data-mode="rotate">Rotate</button>
+                <button class="mode-btn" data-mode="scale">Scale</button>
+            </div>
         </div>
 
         <div id="main">
@@ -27,6 +35,7 @@
 
             <div id="viewport-container">
                 <canvas id="viewport"></canvas>
+                <div id="gizmo-info">Move: Red=X Green=Y Blue=Z</div>
             </div>
 
             <div id="properties-panel" class="panel">
@@ -35,34 +44,14 @@
             </div>
         </div>
 
-<!-- Replace the timeline div with this: -->
-<div id="timeline" class="panel">
-    <h3>Timeline</h3>
-    <div id="timeline-controls">
-        <button id="play-btn">▶ Play</button>
-        <button id="add-keyframe">+ Keyframe</button>
-        <button id="clear-keyframes">Clear Keyframes</button>
-        <input type="range" id="time-slider" min="0" max="100" value="0">
-        <span id="time-display">0.0s</span>
-    </div>
-    <div id="keyframes-container"></div>
-    <div id="stats">
-        Objects: <span id="object-count">0</span> | 
-        Keyframes: <span id="keyframe-count">0</span> | 
-        Time: <span id="current-time">0.0</span>s
-    </div>
-</div>
-
-<!-- Add transform buttons to properties panel: -->
-<div id="properties-panel" class="panel">
-    <h3>Properties</h3>
-    <div id="transform-buttons">
-        <button class="transform-btn" data-transform="translate">Move</button>
-        <button class="transform-btn" data-transform="rotate">Rotate</button>
-        <button class="transform-btn" data-transform="scale">Scale</button>
-    </div>
-    <div id="properties"></div>
-</div>
+        <div id="timeline" class="panel">
+            <h3>Timeline</h3>
+            <div id="timeline-controls">
+                <button id="play-btn">▶ Play</button>
+                <button id="add-keyframe">+ Keyframe</button>
+                <input type="range" id="time-slider" min="0" max="100" value="0">
+                <span id="time-display">0.0s</span>
+            </div>
         </div>
     </div>
 
