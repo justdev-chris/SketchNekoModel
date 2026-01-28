@@ -144,18 +144,24 @@ function updateProperties() {
         row.style.display = 'flex';
         row.style.alignItems = 'center';
         row.style.marginBottom = '8px';
+        
+        // FIXED: Use direct properties instead of getComponent()
+        const posArray = [obj.position.x, obj.position.y, obj.position.z];
+        
         row.innerHTML = `
             <div style="width: 20px; color: #aaa;">${axis}</div>
             <input type="number" 
                    step="0.1"
-                   value="${obj.position.getComponent(idx).toFixed(2)}"
+                   value="${posArray[idx].toFixed(2)}"
                    style="flex: 1; margin-left: 10px; padding: 8px; background: #333; border: 1px solid #444; color: white; border-radius: 4px;">
         `;
         
         const input = row.querySelector('input');
         input.onchange = (e) => {
             const value = parseFloat(e.target.value) || 0;
-            obj.position.setComponent(idx, value);
+            if (idx === 0) obj.position.x = value;
+            else if (idx === 1) obj.position.y = value;
+            else if (idx === 2) obj.position.z = value;
             if (SNM.selectionBox) SNM.selectionBox.update();
         };
         
@@ -163,7 +169,7 @@ function updateProperties() {
     });
     props.appendChild(posGroup);
     
-    // Rotation
+    // Rotation - FIXED SECTION
     const rotGroup = document.createElement('div');
     rotGroup.style.background = '#2a2a2a';
     rotGroup.style.padding = '15px';
@@ -177,7 +183,10 @@ function updateProperties() {
         row.style.alignItems = 'center';
         row.style.marginBottom = '8px';
         
-        const degrees = obj.rotation.getComponent(idx) * (180 / Math.PI);
+        // FIXED: Use direct rotation properties
+        const rotationValues = [obj.rotation.x, obj.rotation.y, obj.rotation.z];
+        const degrees = rotationValues[idx] * (180 / Math.PI);
+        
         row.innerHTML = `
             <div style="width: 20px; color: #aaa;">${axis}</div>
             <input type="number" 
@@ -190,7 +199,12 @@ function updateProperties() {
         input.onchange = (e) => {
             const degrees = parseFloat(e.target.value) || 0;
             const radians = degrees * (Math.PI / 180);
-            obj.rotation.setComponent(idx, radians);
+            
+            // FIXED: Set rotation values directly
+            if (idx === 0) obj.rotation.x = radians;
+            else if (idx === 1) obj.rotation.y = radians;
+            else if (idx === 2) obj.rotation.z = radians;
+            
             if (SNM.selectionBox) SNM.selectionBox.update();
         };
         
@@ -198,7 +212,7 @@ function updateProperties() {
     });
     props.appendChild(rotGroup);
     
-    // Scale
+    // Scale - FIXED SECTION
     const scaleGroup = document.createElement('div');
     scaleGroup.style.background = '#2a2a2a';
     scaleGroup.style.padding = '15px';
@@ -211,19 +225,25 @@ function updateProperties() {
         row.style.display = 'flex';
         row.style.alignItems = 'center';
         row.style.marginBottom = '8px';
+        
+        // FIXED: Use direct scale properties
+        const scaleArray = [obj.scale.x, obj.scale.y, obj.scale.z];
+        
         row.innerHTML = `
             <div style="width: 20px; color: #aaa;">${axis}</div>
             <input type="number" 
                    step="0.1"
                    min="0.1"
-                   value="${obj.scale.getComponent(idx).toFixed(2)}"
+                   value="${scaleArray[idx].toFixed(2)}"
                    style="flex: 1; margin-left: 10px; padding: 8px; background: #333; border: 1px solid #444; color: white; border-radius: 4px;">
         `;
         
         const input = row.querySelector('input');
         input.onchange = (e) => {
             const value = parseFloat(e.target.value) || 1;
-            obj.scale.setComponent(idx, value);
+            if (idx === 0) obj.scale.x = value;
+            else if (idx === 1) obj.scale.y = value;
+            else if (idx === 2) obj.scale.z = value;
             if (SNM.selectionBox) SNM.selectionBox.update();
         };
         
