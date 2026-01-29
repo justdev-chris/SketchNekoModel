@@ -209,7 +209,7 @@ if (typeof window !== 'undefined') {
     // Simple global function
     window.importModel = function() {
         if (window.ModelImporter) {
-            return ModelImporter.openFilePicker();
+            return window.ModelImporter.openFilePicker();
         } else {
             alert('ModelImporter not loaded');
             return false;
