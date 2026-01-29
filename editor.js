@@ -401,21 +401,39 @@ function togglePlayback() {
 
 // ===== IMPORT/EXPORT =====
 function importModel() {
-    // Check if ModelImporter exists (from import.js)
-    if (typeof ModelImporter !== 'undefined' && ModelImporter.openFilePicker) {
-        // Use the proper importer
-        ModelImporter.openFilePicker()
-            .then(() => {
-                updateUI();
-            })
-            .catch(error => {
-                console.error('Import failed:', error);
-                // Fallback to simple file picker for JSON
-                importJSONOnly();
-            });
+    // Since import.js provides its own importModel, just use it
+    // Check if the function from import.js exists
+    if (typeof window.importModel === 'function') {
+        // Call it and let it handle everything
+        window.importModel();
     } else {
-        // Fallback to simple file picker for JSON only
-        importJSONOnly();
+        // Simple JSON fallback
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json,.glb,.gltf,.obj,.stl';
+        
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            const extension = file.name.split('.').pop().toLowerCase();
+            
+            if (extension === 'json') {
+                reader.readAsText(file);
+                reader.onload = (e) => {
+                    try {
+                        loadSceneFromJSON(JSON.parse(e.target.result));
+                    } catch (error) {
+                        alert('Failed to load JSON');
+                    }
+                };
+            } else {
+                alert(`For .${extension} files, please use a 3D modeling software.\nUse .json for SNM scenes.`);
+            }
+        };
+        
+        input.click();
     }
 }
 
