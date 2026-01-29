@@ -119,30 +119,45 @@ const ImportManager = {
         });
     },
     
-    importGLTF(file) {
-        return new Promise((resolve, reject) => {
-            if (!this.loaders.gltf) {
-                reject('GLTFLoader not available');
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.readAsArrayBuffer(file);
-            
-            reader.onload = (e) => {
-                try {
-                    this.loaders.gltf.parse(e.target.result, '', (gltf) => {
+importGLTF(file) {
+    return new Promise((resolve, reject) => {
+        if (!this.loaders.gltf) {
+            reject('GLTFLoader not available');
+            return;
+        }
+        
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+            try {
+                // Use load() with object URL instead of parse()
+                const blob = new Blob([e.target.result]);
+                const url = URL.createObjectURL(blob);
+                
+                this.loaders.gltf.load(
+                    url,
+                    (gltf) => {
+                        URL.revokeObjectURL(url);
                         this.addToScene(gltf.scene, file.name);
                         resolve(`✅ Imported: ${file.name}`);
-                    });
-                } catch (error) {
-                    reject(`Failed to load GLTF: ${error.message}`);
-                }
-            };
-            
-            reader.onerror = () => reject('Failed to read file');
-        });
-    },
+                    },
+                    undefined,
+                    (error) => {
+                        URL.revokeObjectURL(url);
+                        reject(`Failed to load: ${error.message || 'Unknown error'}`);
+                    }
+                );
+            } catch (error) {
+                reject(`Failed to process file: ${error.message}`);
+            }
+        };
+        
+        reader.onerror = () => reject('Failed to read file');
+        
+        // Always read as array buffer for GLB/GLTF
+        reader.readAsArrayBuffer(file);
+    });
+},
     
     importOBJ(file) {
         return new Promise((resolve, reject) => {
