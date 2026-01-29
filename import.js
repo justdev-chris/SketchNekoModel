@@ -145,79 +145,148 @@ importGLTF(file) {
                 // Create loader with the manager
                 const loader = new THREE.GLTFLoader(manager);
                 
-                loader.load(
-                    url,
-                    (gltf) => {
-                        URL.revokeObjectURL(url);
-                        
-                        // IMPORTANT: Process ALL children, not just first level
-                        this.processAllMeshes(gltf.scene, file.name);
-                        
-                        resolve(`✅ Imported: ${file.name}`);
-                    },
-                    (progress) => {
-                        // Progress updates
-                        console.log(`Loading: ${(progress.loaded / progress.total * 100).toFixed(1)}%`);
-                    },
-                    (error) => {
-                        URL.revokeObjectURL(url);
-                        console.error('GLTFLoader error:', error);
-                        
-                        // Try alternative: parse directly
-                        this.tryDirectParse(e.target.result, file.name)
-                            .then(resolve)
-                            .catch(reject);
-                    }
-                );
-                
-            } catch (error) {
-                reject(`Failed to load GLTF: ${error.message}`);
-            }
-        };
+loader.load(
+    url,
+    (gltf) => {
+        URL.revokeObjectURL(url);
         
-        reader.onerror = () => reject('Failed to read file');
-    });
-},
+        console.log('🔍 GLTF loaded structure:', {
+            hasScene: !!gltf.scene,
+            scenesCount: gltf.scenes ? gltf.scenes.length : 0,
+            scenesArray: gltf.scenes,
+            parserExists: !!gltf.parser,
+            gltfObject: gltf
+        });
+        
+        // Determine what to process
+        let sceneToProcess = null;
+        
+        // Option 1: Direct scene property
+        if (gltf.scene && gltf.scene.isObject3D) {
+            console.log('✅ Using gltf.scene');
+            sceneToProcess = gltf.scene;
+        }
+        // Option 2: Scenes array
+        else if (gltf.scenes && gltf.scenes.length > 0) {
+            console.log('✅ Using gltf.scenes[0]');
+            sceneToProcess = gltf.scenes[0];
+            
+            // If first scene is not Object3D but has nodes
+            if (!sceneToProcess.isObject3D && sceneToProcess.nodes) {
+                sceneToProcess = this.buildSceneFromNodes(sceneToProcess.nodes);
+            }
+        }
+        // Option 3: Parser JSON data
+        else if (gltf.parser && gltf.parser.json) {
+            console.log('✅ Building from parser.json');
+            sceneToProcess = this.buildSceneFromGLTFJSON(gltf.parser.json);
+        }
+        // Option 4: GLTF might be the scene itself
+        else if (gltf.isObject3D || gltf.isMesh || gltf.isGroup) {
+            console.log('✅ GLTF is the scene itself');
+            sceneToProcess = gltf;
+        }
+        // Option 5: Check for any Object3D in gltf
+        else {
+            // Look for any Object3D property
+            for (const key in gltf) {
+                if (gltf[key] && gltf[key].isObject3D) {
+                    console.log(`✅ Found scene at gltf.${key}`);
+                    sceneToProcess = gltf[key];
+                    break;
+                }
+            }
+        }
+        
+        if (sceneToProcess) {
+            console.log('🎯 Processing scene:', sceneToProcess);
+            const meshCount = this.processAllMeshes(sceneToProcess, file.name);
+            
+            if (meshCount > 0) {
+                resolve(`✅ Successfully imported ${meshCount} mesh(es) from ${file.name}`);
+            } else {
+                // Try brute force - check all properties for meshes
+                console.log('⚠️ No meshes found, searching all properties...');
+                this.bruteForceFindMeshes(gltf, file.name)
+                    .then(count => {
+                        if (count > 0) {
+                            resolve(`✅ Found ${count} mesh(es) in ${file.name}`);
+                        } else {
+                            reject('No 3D meshes found in file');
+                        }
+                    })
+                    .catch(reject);
+            }
+        } else {
+            console.error('❌ No scene found in GLTF:', gltf);
+            reject('File contains no 3D scene data');
+        }
+    },
+    // Progress callback
+    (progress) => {
+        if (progress.lengthComputable) {
+            const percent = (progress.loaded / progress.total * 100).toFixed(1);
+            console.log(`📥 Loading: ${percent}%`);
+        }
+    },
+    // Error callback
+    (error) => {
+        URL.revokeObjectURL(url);
+        console.error('❌ GLTFLoader failed:', error);
+        
+        // Try alternative method
+        console.log('🔄 Trying alternative load method...');
+        this.alternativeGLTFLoad(file)
+            .then(resolve)
+            .catch((altError) => {
+                reject(`Failed to load: ${error.message || 'Unknown error'}. Alternative also failed: ${altError.message}`);
+            });
+    }
+);
 
 // Process ALL meshes in the scene hierarchy
 processAllMeshes(object, filename) {
+    // FIX: Check if object exists
+    if (!object) {
+        console.error('❌ Cannot process: object is null/undefined');
+        return 0;
+    }
+    
     let meshCount = 0;
     
-    object.traverse((child) => {
-        if (child.isMesh) {
-            meshCount++;
-            
-            // Ensure it has a unique name
-            if (!child.name || child.name === '') {
-                child.name = `${filename}_mesh_${meshCount}`;
+    // FIX: Check if object has traverse method
+    if (object.traverse && typeof object.traverse === 'function') {
+        object.traverse((child) => {
+            if (child && child.isMesh) {
+                meshCount++;
+                this.addMeshToScene(child, filename, meshCount);
             }
-            
-            // Add to your scene
-            SNM.scene.add(child);
-            SNM.objects.push(child);
-            
-            // Set user data
-            child.userData = child.userData || {};
-            child.userData.type = 'imported';
-            child.userData.source = filename;
-            child.userData.originalName = child.name;
-            
-            // Fix: Ensure material exists
-            if (!child.material) {
-                child.material = new THREE.MeshStandardMaterial({ 
-                    color: 0x888888 
-                });
+        });
+    } 
+    // FIX: If no traverse, check if object itself is a mesh
+    else if (object.isMesh) {
+        meshCount = 1;
+        this.addMeshToScene(object, filename, 1);
+    }
+    // FIX: If it's a Group or Object3D with children array
+    else if (object.children && Array.isArray(object.children)) {
+        object.children.forEach((child, index) => {
+            if (child && child.isMesh) {
+                meshCount++;
+                this.addMeshToScene(child, filename, meshCount);
             }
-        }
-    });
+        });
+    }
     
-    console.log(`Processed ${meshCount} meshes from ${filename}`);
+    console.log(`✅ Processed ${meshCount} meshes from ${filename}`);
     
     // Update UI
     if (window.UI && UI.updateUI) {
         UI.updateUI();
     }
-},
+    
+    return meshCount;
+}
 
 // Alternative parsing method
 tryDirectParse(arrayBuffer, filename) {
