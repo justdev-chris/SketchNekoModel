@@ -127,37 +127,136 @@ importGLTF(file) {
         }
         
         const reader = new FileReader();
+        reader.readAsArrayBuffer(file);
         
         reader.onload = (e) => {
             try {
-                // Use load() with object URL instead of parse()
+                // FIX: Use THREE.FileLoader to handle the buffer properly
                 const blob = new Blob([e.target.result]);
                 const url = URL.createObjectURL(blob);
                 
-                this.loaders.gltf.load(
+                // Create a manager to track loading
+                const manager = new THREE.LoadingManager();
+                
+                manager.onProgress = (url, loaded, total) => {
+                    console.log(`Loading: ${loaded}/${total} - ${url}`);
+                };
+                
+                // Create loader with the manager
+                const loader = new THREE.GLTFLoader(manager);
+                
+                loader.load(
                     url,
                     (gltf) => {
                         URL.revokeObjectURL(url);
-                        this.addToScene(gltf.scene, file.name);
+                        
+                        // IMPORTANT: Process ALL children, not just first level
+                        this.processAllMeshes(gltf.scene, file.name);
+                        
                         resolve(`✅ Imported: ${file.name}`);
                     },
-                    undefined,
+                    (progress) => {
+                        // Progress updates
+                        console.log(`Loading: ${(progress.loaded / progress.total * 100).toFixed(1)}%`);
+                    },
                     (error) => {
                         URL.revokeObjectURL(url);
-                        reject(`Failed to load: ${error.message || 'Unknown error'}`);
+                        console.error('GLTFLoader error:', error);
+                        
+                        // Try alternative: parse directly
+                        this.tryDirectParse(e.target.result, file.name)
+                            .then(resolve)
+                            .catch(reject);
                     }
                 );
+                
             } catch (error) {
-                reject(`Failed to process file: ${error.message}`);
+                reject(`Failed to load GLTF: ${error.message}`);
             }
         };
         
         reader.onerror = () => reject('Failed to read file');
-        
-        // Always read as array buffer for GLB/GLTF
-        reader.readAsArrayBuffer(file);
     });
 },
+
+// Process ALL meshes in the scene hierarchy
+processAllMeshes(object, filename) {
+    let meshCount = 0;
+    
+    object.traverse((child) => {
+        if (child.isMesh) {
+            meshCount++;
+            
+            // Ensure it has a unique name
+            if (!child.name || child.name === '') {
+                child.name = `${filename}_mesh_${meshCount}`;
+            }
+            
+            // Add to your scene
+            SNM.scene.add(child);
+            SNM.objects.push(child);
+            
+            // Set user data
+            child.userData = child.userData || {};
+            child.userData.type = 'imported';
+            child.userData.source = filename;
+            child.userData.originalName = child.name;
+            
+            // Fix: Ensure material exists
+            if (!child.material) {
+                child.material = new THREE.MeshStandardMaterial({ 
+                    color: 0x888888 
+                });
+            }
+        }
+    });
+    
+    console.log(`Processed ${meshCount} meshes from ${filename}`);
+    
+    // Update UI
+    if (window.UI && UI.updateUI) {
+        UI.updateUI();
+    }
+},
+
+// Alternative parsing method
+tryDirectParse(arrayBuffer, filename) {
+    return new Promise((resolve, reject) => {
+        try {
+            const loader = new THREE.GLTFLoader();
+            
+            loader.parse(arrayBuffer, '', (gltf) => {
+                // Different approach: Add the entire scene as one object
+                gltf.scene.name = filename.replace(/\.[^/.]+$/, '');
+                gltf.scene.userData = { 
+                    type: 'imported_group',
+                    source: filename,
+                    meshCount: this.countMeshes(gltf.scene)
+                };
+                
+                // Add the whole group
+                SNM.scene.add(gltf.scene);
+                SNM.objects.push(gltf.scene); // Add group to objects list
+                
+                // Update UI
+                if (window.UI && UI.updateUI) UI.updateUI();
+                
+                resolve(`✅ Imported as group: ${filename}`);
+            }, reject);
+            
+        } catch (error) {
+            reject(`Direct parse failed: ${error.message}`);
+        }
+    });
+},
+
+countMeshes(object) {
+    let count = 0;
+    object.traverse(child => {
+        if (child.isMesh) count++;
+    });
+    return count;
+}
     
     importOBJ(file) {
         return new Promise((resolve, reject) => {
