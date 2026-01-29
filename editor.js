@@ -401,34 +401,50 @@ function togglePlayback() {
 
 // ===== IMPORT/EXPORT =====
 function importModel() {
-    // Create file input
+    // Check if ModelImporter exists (from import.js)
+    if (typeof ModelImporter !== 'undefined' && ModelImporter.openFilePicker) {
+        // Use the proper importer
+        ModelImporter.openFilePicker()
+            .then(() => {
+                updateUI();
+            })
+            .catch(error => {
+                console.error('Import failed:', error);
+                // Fallback to simple file picker for JSON
+                importJSONOnly();
+            });
+    } else {
+        // Fallback to simple file picker for JSON only
+        importJSONOnly();
+    }
+}
+
+// Simple JSON-only import (fallback)
+function importJSONOnly() {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.gltf,.glb,.obj,.stl,.json';
-    input.multiple = false;
+    input.accept = '.json';
     
     input.onchange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
         
-        const reader = new FileReader();
-        const extension = file.name.split('.').pop().toLowerCase();
-        
-        if (extension === 'json') {
-            // Load SNM scene JSON
-            reader.readAsText(file);
-            reader.onload = (e) => {
-                try {
-                    const sceneData = JSON.parse(e.target.result);
-                    loadSceneFromJSON(sceneData);
-                    alert(`Loaded: ${file.name}`);
-                } catch (error) {
-                    alert(`Failed to load JSON: ${error.message}`);
-                }
-            };
-        } else {
-            alert(`Import for .${extension} requires import.js\nAdd: <script src="import.js"></script>`);
+        if (!file.name.toLowerCase().endsWith('.json')) {
+            alert('Please select a .json file');
+            return;
         }
+        
+        const reader = new FileReader();
+        reader.readAsText(file);
+        
+        reader.onload = (e) => {
+            try {
+                const sceneData = JSON.parse(e.target.result);
+                loadSceneFromJSON(sceneData);
+            } catch (error) {
+                alert('Failed to load JSON: ' + error.message);
+            }
+        };
     };
     
     input.click();
