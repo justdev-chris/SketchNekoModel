@@ -410,38 +410,75 @@ function importModel() {
 }
 
 function exportGLB() {
-    if (!SNM.scene) return;
+    if (!SNM.scene || SNM.objects.length === 0) {
+        alert('No objects to export');
+        return;
+    }
     
-    // Remove helpers
-    const helpers = [];
-    SNM.scene.children.forEach(child => {
-        if (child.name === 'selection_box' || child.type === 'TransformControls' || 
-            child.type === 'GridHelper' || child.type === 'AxesHelper') {
-            helpers.push(child);
-            SNM.scene.remove(child);
+    // Create a clean scene for export
+    const exportScene = new THREE.Scene();
+    
+    // Clone each object properly
+    SNM.objects.forEach((obj, index) => {
+        if (obj.isMesh) {
+            const clone = obj.clone();
+            
+            // Clone material with color preserved
+            if (clone.material) {
+                clone.material = clone.material.clone();
+                clone.material.color = clone.material.color.clone();
+                clone.material.needsUpdate = true;
+            }
+            
+            // Clean up Three.js specific data
+            clone.userData = { 
+                type: obj.userData?.type || 'mesh',
+                id: index 
+            };
+            
+            exportScene.add(clone);
         }
     });
     
     const exporter = new THREE.GLTFExporter();
     
-    exporter.parse(SNM.scene, function(gltf) {
-        const blob = new Blob([gltf], { type: 'model/gltf-binary' });
+    exporter.parse(exportScene, (result) => {
+        // result should be ArrayBuffer for binary=true
+        if (!(result instanceof ArrayBuffer)) {
+            console.error('Exporter did not return ArrayBuffer');
+            alert('Export failed: Wrong format');
+            return;
+        }
+        
+        // Create and download the file
+        const blob = new Blob([result], { type: 'model/gltf-binary' });
         const url = URL.createObjectURL(blob);
         
         const a = document.createElement('a');
+        a.style.display = 'none';
         a.href = url;
         a.download = `model_${Date.now()}.glb`;
+        
+        document.body.appendChild(a);
         a.click();
         
-        alert('✅ GLB exported!');
+        // Cleanup
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
+        
+        console.log('GLB exported successfully:', blob.size, 'bytes');
+        alert(`✅ GLB exported (${Math.round(blob.size/1024)}KB)\nShould work in all viewers.`);
+        
     }, { 
-        binary: true,
-        trs: false,  // CHANGE THIS TO false
-        onlyVisible: true 
+        binary: true,           // GLB format (binary)
+        trs: false,            // Use matrix instead of position/rotation/scale
+        onlyVisible: true,     // Only export visible objects
+        embedImages: false,    // No textures
+        animations: [],        // No animations
+        includeCustomExtensions: false  // No Three.js extensions
     });
-    
-    // Restore helpers
-    helpers.forEach(helper => SNM.scene.add(helper));
 }
 
 function exportJSON() {
