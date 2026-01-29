@@ -419,35 +419,36 @@ function importModel() {
     }
 }
 
-// Simple JSON-only import (fallback)
-function importJSONOnly() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+// import/export
+function importModel() {
+    // Just call the global function that import.js provides
+    if (typeof window.importModel === 'function') {
+        window.importModel();
+    } else {
+        // Fallback to JSON
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
         
-        if (!file.name.toLowerCase().endsWith('.json')) {
-            alert('Please select a .json file');
-            return;
-        }
-        
-        const reader = new FileReader();
-        reader.readAsText(file);
-        
-        reader.onload = (e) => {
-            try {
-                const sceneData = JSON.parse(e.target.result);
-                loadSceneFromJSON(sceneData);
-            } catch (error) {
-                alert('Failed to load JSON: ' + error.message);
-            }
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.readAsText(file);
+            
+            reader.onload = (e) => {
+                try {
+                    const sceneData = JSON.parse(e.target.result);
+                    loadSceneFromJSON(sceneData);
+                } catch (error) {
+                    alert('Failed to load JSON: ' + error.message);
+                }
+            };
         };
-    };
-    
-    input.click();
+        
+        input.click();
+    }
 }
 
 function loadSceneFromJSON(sceneData) {
