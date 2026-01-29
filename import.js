@@ -10,127 +10,126 @@ class ModelImporter {
     
     setupLoaders() {
         // GLTF/GLB loader
-        if (THREE.GLTFLoader) {
+        if (typeof THREE !== 'undefined' && THREE.GLTFLoader) {
             this.loaders.gltf = new THREE.GLTFLoader();
             this.loaders.glb = new THREE.GLTFLoader();
+            console.log('✅ GLTFLoader loaded');
+        } else {
+            console.warn('❌ GLTFLoader not available');
         }
         
         // OBJ loader
-        if (THREE.OBJLoader) {
+        if (typeof THREE !== 'undefined' && THREE.OBJLoader) {
             this.loaders.obj = new THREE.OBJLoader();
+            console.log('✅ OBJLoader loaded');
+        } else {
+            console.warn('❌ OBJLoader not available');
         }
         
-        // FBX loader (would need FBXLoader library)
         // STL loader
-        if (THREE.STLLoader) {
+        if (typeof THREE !== 'undefined' && THREE.STLLoader) {
             this.loaders.stl = new THREE.STLLoader();
+            console.log('✅ STLLoader loaded');
+        } else {
+            console.warn('❌ STLLoader not available');
         }
     }
     
     importFile(file) {
         return new Promise((resolve, reject) => {
             const extension = file.name.split('.').pop().toLowerCase();
-            const reader = new FileReader();
             
-            if (!this.loaders[extension]) {
-                reject(`Unsupported format: .${extension}`);
+            console.log('Importing:', file.name, 'format:', extension);
+            
+            if (!this.supportedFormats.includes(extension)) {
+                reject(`Unsupported format: .${extension}. Use: ${this.supportedFormats.join(', ')}`);
                 return;
             }
             
-            if (extension === 'gltf' || extension === 'glb') {
+            if (!this.loaders[extension]) {
+                reject(`Loader for .${extension} not available. Check console.`);
+                return;
+            }
+            
+            const reader = new FileReader();
+            
+            if (extension === 'glb' || extension === 'gltf') {
                 reader.readAsArrayBuffer(file);
-                reader.onload = (e) => {
-                    this.loadGLTF(e.target.result, extension === 'glb', file.name)
-                        .then(resolve)
-                        .catch(reject);
-                };
             } else {
                 reader.readAsText(file);
-                reader.onload = (e) => {
-                    this.loadTextBased(e.target.result, extension, file.name)
+            }
+            
+            reader.onload = (e) => {
+                try {
+                    this.parseFile(e.target.result, extension, file.name)
                         .then(resolve)
                         .catch(reject);
-                };
-            }
+                } catch (error) {
+                    reject('Parse error: ' + error.message);
+                }
+            };
             
             reader.onerror = () => reject('Failed to read file');
         });
     }
     
-    loadGLTF(data, binary, filename) {
-        return new Promise((resolve, reject) => {
-            if (!this.loaders.gltf) {
-                reject('GLTFLoader not available');
-                return;
-            }
-            
-            const loader = this.loaders.gltf;
-            const blob = new Blob([data]);
-            const url = URL.createObjectURL(blob);
-            
-            loader.load(url, (gltf) => {
-                URL.revokeObjectURL(url);
-                
-                // Process imported model
-                const model = this.processGLTF(gltf, filename);
-                resolve(model);
-            }, undefined, reject);
-        });
-    }
-    
-    loadTextBased(data, format, filename) {
+    parseFile(data, format, filename) {
         return new Promise((resolve, reject) => {
             const loader = this.loaders[format];
             if (!loader) {
-                reject(`Loader for .${format} not available`);
+                reject(`No loader for ${format}`);
                 return;
             }
             
             try {
-                let model;
-                
-                if (format === 'obj') {
-                    model = loader.parse(data);
+                if (format === 'glb' || format === 'gltf') {
+                    // Binary data for GLB/GLTF
+                    loader.parse(data, '', (gltf) => {
+                        const model = this.processGLTF(gltf, filename);
+                        resolve(model);
+                    }, reject);
+                } else if (format === 'obj') {
+                    // Text data for OBJ
+                    const model = loader.parse(data);
+                    this.processImportedModel(model, filename);
+                    resolve(model);
                 } else if (format === 'stl') {
+                    // Binary or text for STL
                     const geometry = loader.parse(data);
                     const material = new THREE.MeshStandardMaterial({ 
                         color: 0x888888,
                         metalness: 0.2,
                         roughness: 0.8
                     });
-                    model = new THREE.Mesh(geometry, material);
-                }
-                
-                if (model) {
+                    const model = new THREE.Mesh(geometry, material);
                     this.processImportedModel(model, filename);
                     resolve(model);
-                } else {
-                    reject('Failed to parse model');
                 }
             } catch (error) {
-                reject(error.message);
+                reject('Parse failed: ' + error.message);
             }
         });
     }
     
     processGLTF(gltf, filename) {
         const model = gltf.scene || gltf;
-        model.name = filename.replace(/\.[^/.]+$/, ''); // Remove extension
+        model.name = filename.replace(/\.[^/.]+$/, '');
         
-        // Scale and position
-        model.scale.set(1, 1, 1);
-        model.position.set(0, 0, 0);
+        // Scale and center
+        this.normalizeModel(model);
         
         // Add to scene
-        SNM.scene.add(model);
-        SNM.objects.push(model);
-        
-        // Select the model
-        if (window.Editor && Editor.selectObject) {
-            Editor.selectObject(model);
+        if (window.SNM && SNM.scene) {
+            SNM.scene.add(model);
+            SNM.objects.push(model);
+            
+            // Select it
+            if (window.Editor && Editor.selectObject) {
+                Editor.selectObject(model);
+            }
         }
         
-        console.log(`✅ Imported: ${filename}`);
+        console.log(`✅ Imported GLTF: ${filename}`);
         return model;
     }
     
@@ -138,107 +137,84 @@ class ModelImporter {
         model.name = filename.replace(/\.[^/.]+$/, '');
         model.userData = { type: 'imported', source: filename };
         
-        // Scale to reasonable size
-        const box = new THREE.Box3().setFromObject(model);
-        const size = box.getSize(new THREE.Vector3());
-        const maxSize = Math.max(size.x, size.y, size.z);
-        const scale = 2 / maxSize; // Scale to fit in 2 units
-        
-        model.scale.setScalar(scale);
-        model.position.set(0, 0, 0);
-        
-        // Center the model
-        const center = box.getCenter(new THREE.Vector3());
-        model.position.sub(center.multiplyScalar(scale));
+        // Scale and center
+        this.normalizeModel(model);
         
         // Add to scene
-        SNM.scene.add(model);
-        SNM.objects.push(model);
-        
-        // Select it
-        if (window.Editor && Editor.selectObject) {
-            Editor.selectObject(model);
+        if (window.SNM && SNM.scene) {
+            SNM.scene.add(model);
+            SNM.objects.push(model);
+            
+            // Select it
+            if (window.Editor && Editor.selectObject) {
+                Editor.selectObject(model);
+            }
         }
         
-        console.log(`✅ Imported: ${filename}`);
+        console.log(`✅ Imported model: ${filename}`);
         return model;
     }
     
-    // Simple file picker
-    openFilePicker() {
-        return new Promise((resolve, reject) => {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.gltf,.glb,.obj,.stl,.fbx';
-            input.multiple = false;
+    normalizeModel(model) {
+        // Calculate bounding box
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        
+        // Scale to reasonable size
+        const maxSize = Math.max(size.x, size.y, size.z);
+        if (maxSize > 0) {
+            const scale = 2 / maxSize;
+            model.scale.setScalar(scale);
             
-            input.onchange = (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    this.importFile(file)
-                        .then(resolve)
-                        .catch(reject);
-                } else {
-                    reject('No file selected');
-                }
-            };
-            
-            input.click();
-        });
+            // Center the model
+            model.position.sub(center.multiplyScalar(scale));
+        }
+        
+        model.position.y = 0;
     }
     
-    // Drag and drop support
-    setupDragDrop(dropZone) {
-        if (!dropZone) return;
+    // SIMPLE FILE PICKER - NO PROMISE BULLSHIT
+    openFilePicker() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.gltf,.glb,.obj,.stl';
         
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dropZone.style.backgroundColor = 'rgba(0, 100, 255, 0.2)';
-        });
-        
-        dropZone.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dropZone.style.backgroundColor = '';
-        });
-        
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dropZone.style.backgroundColor = '';
-            
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                const file = files[0];
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
                 this.importFile(file)
                     .then(() => {
-                        if (window.UI && window.UI.updateUI) {
-                            window.UI.updateUI();
+                        // Update UI after successful import
+                        if (window.UI && UI.updateUI) {
+                            UI.updateUI();
                         }
-                        alert(`Successfully imported: ${file.name}`);
+                        alert(`✅ Successfully imported: ${file.name}`);
                     })
                     .catch(error => {
-                        alert(`Import failed: ${error}`);
+                        alert(`❌ Import failed: ${error}`);
                     });
             }
-        });
+        };
+        
+        input.click();
+        return true; // Simple return, no Promise
     }
 }
 
-// Create global instance
-window.ModelImporter = new ModelImporter();
+// Create global instance IMMEDIATELY
+if (typeof window !== 'undefined') {
+    window.ModelImporter = new ModelImporter();
+    
+    // Simple global function
+    window.importModel = function() {
+        if (window.ModelImporter) {
+            return ModelImporter.openFilePicker();
+        } else {
+            alert('ModelImporter not loaded');
+            return false;
+        }
+    };
+}
 
-// Helper functions
-window.importModel = function() {
-    return ModelImporter.openFilePicker();
-};
-
-window.setupDragDrop = function(elementId) {
-    const element = document.getElementById(elementId);
-    if (element) {
-        ModelImporter.setupDragDrop(element);
-    }
-};
-
-console.log('✅ SNM Import loaded');
+console.log('✅ SNM Import loaded - ModelImporter ready');
