@@ -399,131 +399,14 @@ function togglePlayback() {
     }
 }
 
-// ===== IMPORT/EXPORT =====
 function importModel() {
-    // Use the working ModelImporter
-    if (window.ModelImporter && typeof ModelImporter.openFilePicker === 'function') {
-        ModelImporter.openFilePicker();
+    // Use the new ImportManager
+    if (window.ImportManager && window.ImportManager.openFilePicker) {
+        window.ImportManager.openFilePicker();
     } else {
-        // Simple JSON fallback
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        
-        input.onchange = (e) => {
-            const file = e.target.files[0];
-            if (file && file.name.endsWith('.json')) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        loadSceneFromJSON(JSON.parse(e.target.result));
-                    } catch (error) {
-                        alert('Failed to load JSON');
-                    }
-                };
-                reader.readAsText(file);
-            }
-        };
-        
-        input.click();
+        // Fallback
+        alert('Import system not ready');
     }
-}
-
-// import/export
-function importModel() {
-    // Just call the global function that import.js provides
-    if (typeof window.importModel === 'function') {
-        window.importModel();
-    } else {
-        // Fallback to JSON
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        
-        input.onchange = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.readAsText(file);
-            
-            reader.onload = (e) => {
-                try {
-                    const sceneData = JSON.parse(e.target.result);
-                    loadSceneFromJSON(sceneData);
-                } catch (error) {
-                    alert('Failed to load JSON: ' + error.message);
-                }
-            };
-        };
-        
-        input.click();
-    }
-}
-
-function loadSceneFromJSON(sceneData) {
-    // Clear current scene
-    SNM.objects.forEach(obj => SNM.scene.remove(obj));
-    SNM.objects = [];
-    SNM.animations = [];
-    
-    // Load objects
-    if (sceneData.objects) {
-        sceneData.objects.forEach(objData => {
-            let geometry, material;
-            
-            switch(objData.type) {
-                case 'cube':
-                    geometry = new THREE.BoxGeometry(1, 1, 1);
-                    break;
-                case 'sphere':
-                    geometry = new THREE.SphereGeometry(0.5, 32, 32);
-                    break;
-                case 'cylinder':
-                    geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 32);
-                    break;
-                default:
-                    geometry = new THREE.BoxGeometry(1, 1, 1);
-            }
-            
-            material = new THREE.MeshStandardMaterial({
-                color: objData.material?.color || 0x888888,
-                metalness: objData.material?.metalness || 0.1,
-                roughness: objData.material?.roughness || 0.7
-            });
-            
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.name = objData.name;
-            mesh.position.set(...objData.position);
-            mesh.rotation.set(...objData.rotation);
-            mesh.scale.set(...objData.scale);
-            mesh.userData = objData.userData || { type: objData.type };
-            
-            SNM.scene.add(mesh);
-            SNM.objects.push(mesh);
-        });
-    }
-    
-    // Load animations
-    if (sceneData.animations) {
-        sceneData.animations.forEach(animData => {
-            const object = SNM.objects.find(obj => obj.name === animData.objectName);
-            if (object) {
-                SNM.animations.push({
-                    object: object,
-                    keyframes: animData.keyframes.map(kf => ({
-                        time: kf.time,
-                        position: new THREE.Vector3(...kf.position),
-                        rotation: new THREE.Euler(...kf.rotation),
-                        scale: new THREE.Vector3(...kf.scale)
-                    })),
-                    name: animData.name
-                });
-            }
-        });
-    }
-    
-    updateUI();
 }
 
 function exportGLB() {
