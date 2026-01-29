@@ -412,10 +412,11 @@ function importModel() {
 function exportGLB() {
     if (!SNM.scene) return;
     
-    // Remove helpers before export
+    // Remove helpers
     const helpers = [];
     SNM.scene.children.forEach(child => {
-        if (child.name === 'selection_box' || child.type === 'TransformControls' || child.type === 'GridHelper' || child.type === 'AxesHelper') {
+        if (child.name === 'selection_box' || child.type === 'TransformControls' || 
+            child.type === 'GridHelper' || child.type === 'AxesHelper') {
             helpers.push(child);
             SNM.scene.remove(child);
         }
@@ -423,21 +424,21 @@ function exportGLB() {
     
     const exporter = new THREE.GLTFExporter();
     
-    exporter.parse(SNM.scene, (gltf) => {
-        const output = JSON.stringify(gltf, null, 2);
-        const blob = new Blob([output], { type: 'model/gltf-binary' });
+    exporter.parse(SNM.scene, function(gltf) {
+        const blob = new Blob([gltf], { type: 'model/gltf-binary' });
         const url = URL.createObjectURL(blob);
         
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `snm_model_${Date.now()}.glb`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `model_${Date.now()}.glb`;
+        a.click();
         
-        alert('Model exported as GLB!');
-    }, { binary: true });
+        alert('✅ GLB exported!');
+    }, { 
+        binary: true,
+        trs: false,  // CHANGE THIS TO false
+        onlyVisible: true 
+    });
     
     // Restore helpers
     helpers.forEach(helper => SNM.scene.add(helper));
